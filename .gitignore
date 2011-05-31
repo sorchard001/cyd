@@ -1,0 +1,21 @@
+## common temporary files
+*~
+.*.swp
+.*.swo
+.DS_Store
+## debian rules
+debian/
+## generated files
+sqr[210].bin
+saw[210].bin
+tri[210].bin
+sin[210].bin
+nzz[210].bin
+silent.bin
+ftable.s
+tune.s
+cyd.bin
+cyd.lis
+## final output
+cyd.cas
+cyd.wav
