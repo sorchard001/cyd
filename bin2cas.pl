@@ -9,6 +9,9 @@
 # v2.2: fixed wav header when using --blocks
 #       added 'p' block instruction
 #       fixed blocks help text
+# v2.3: --dzip pipes binary data through dzip (requires dzip, obv.)
+#       --dunzip implies --zip and prefixes autorun dunzip loader
+# v2.4: use safe pipes for --dzip
 
 use strict;
 
@@ -69,6 +72,8 @@ Generate a cassette image from binary input.
       --eof-data       EOF block allowed to contain the last chunk of data
       --wav-out        output a WAV file instead of a CAS
   -r, --wav-rate RATE  sample rate for WAV output
+      --dzip           pipe file input through dzip
+      --dunzip         autorun header with dunzip (implies --dzip)
 
 In standard cassette image mode, load and exec addresses are determined from
 the binary if DragonDOS or RSDOS binary format is specified, otherwise they
@@ -121,7 +126,13 @@ my $eof_data = 0;
 my $leader = 256;
 my $wav_out = 0;
 my $mode = BINARY_RAW;
+my $dunzip = 0;
+my $zip = 0;
 my @blocks = ();
+
+if ($ENV{'PATH'} =~ /^(.*)$/) {
+	$ENV{'PATH'} = $1;
+}
 
 while (my $opt = shift @ARGV) {
 	if ($opt eq '--') {
@@ -170,6 +181,12 @@ while (my $opt = shift @ARGV) {
 		$wav_out = 1;
 	} elsif ($opt eq '-r' || $opt eq '--wav-rate') {
 		$sample_rate = shift @ARGV;
+	} elsif ($opt eq '--dzip') {
+		$zip = 1;
+	} elsif ($opt eq '--dunzip') {
+		$dunzip = 1;
+		$zip = 1;
+		$want_fnblock = 1;
 	} elsif ($opt eq '--help') {
 		help_text();
 	} elsif ($opt =~ /^-/) {
@@ -275,6 +292,30 @@ while (my $s = shift @{$file_info->{'segments'}}) {
 my $ptr = 0;
 my $size = $end - $start;
 
+my $orig_load = $load;
+my $orig_size = $size;
+
+if ($zip) {
+	my $pid = open(my $cfd, "-|") // die "Failed to open pipe to dzip\n";
+	if ($pid == 0) {
+		open(my $zfd, "|-", "dzip", "-c") // exit 0;
+		binmode $zfd;
+		print $zfd $data;
+		close $zfd;
+		exit 0;
+	}
+	binmode $cfd;
+	{
+		local $/ = undef;
+		$data = <$cfd>;
+	}
+	close $cfd;
+	# reposition...
+	$size = bytes::length($data);
+	die "No data from pipe to dzip\n" unless ($size > 0);
+	$load = $orig_load + $orig_size + 1 - $size;
+}
+
 # Special case: if a list of blocks is specified, output those blocks only.
 
 if (scalar(@blocks) > 0) {
@@ -311,8 +352,34 @@ if (scalar(@blocks) > 0) {
 
 	if ($want_fnblock) {
 		bytes_out("U" x $leader);
-		my $fndata = sprintf("%-8s%c\x00\x00%c%c%c%c", $name, $filetype, $exec>>8, $exec & 0xff, $load >> 8, $load & 0xff);
+		my $fndata = sprintf("\%-8s", $name);
+		if ($dunzip) {
+			# autorun dunzip loader
+			$fndata .= pack("H*", "0200003a0000a6");
+			$fndata .= pack("H*n", "8e", $load);
+			$fndata .= pack("H*n", "8d0e8e", $load);
+			$fndata .= pack("H*n", "cc", $load + $size);
+			$fndata .= pack("H*n", "ce", $orig_load);
+			$fndata .= pack("H*n", "8d3c7e", $exec);
+			$fndata .= pack("H*", "9f7ead9fa004ad9fa00626109f7e967c");
+			$fndata .= pack("H*", "4c26f3b6ff2184f7b7ff21398df5");
+			$fndata .= pack("H*", "8e022b8d0220fea68027f2ad9fa00220");
+			$fndata .= pack("H*", "f6492f4f204552524f5200fd025bec81");
+			$fndata .= pack("H*", "2a195d2a0958475631cbe680200231c6");
+			$fndata .= pack("H*", "a6a0a7c05c28f92007e680e7c04c28f9");
+			$fndata .= pack("H*", "8c000025d939");
+		} else {
+			# standard filename block
+			$fndata .= pack("Cxxnn", $filetype, $exec, $load);
+		}
 		block_out(BLOCK_NAMEFILE, $fndata);
+		if ($dunzip) {
+			if ($wav_out) {
+				sample_out(0x80, 0xda5c * 8 * 16);
+			}
+			bytes_out("U" x $leader);
+			block_out(BLOCK_EOF, pack("H*", "01e57e01e9"));
+		}
 		if ($wav_out) {
 			sample_out(0x80, 0xda5c * 8 * 16);
 		}
@@ -487,7 +554,8 @@ sub bytes_out {
 	}
 	for my $byte (unpack("C*", $data)) {
 		for (0..7) {
-			my $cycles = ($byte & 1) ? 176 : 352;
+			my $cycles = 176;
+			$cycles *= 2 if (!($byte & 1));
 			for (@wav_samples) {
 				sample_out($_, $cycles);
 			}
