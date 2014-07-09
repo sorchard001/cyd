@@ -271,14 +271,14 @@ print "\n";
 
 sub print_note {
 	my $note = shift;
-	my $cmd_list = shift;
+	my $data = shift;
 	return if ($note->{'duration'} == 0);
 
 	my $explicit_note = $note->{'gate'} || $note->{'setnote'};
 
 	if ($note->{'setport'}) {
 		if ($note->{'port'} == -1 || $note->{'duration'} > 1 || !$explicit_note) {
-			printf "\tfcb\tsetport,\%d\n", $note->{'cport'};
+			push @{$data}, [ "setport", $note->{'cport'} ];
 			$nbytes += 2;
 			$note->{'setport'} = 0;
 		}
@@ -286,27 +286,27 @@ sub print_note {
 
 	if ($note->{'gate'}) {
 		if ($note->{'note'} == -1) {
-			printf "\tfcb\tsilence,\%d\t; gate\n", $note->{'duration'}%256;
+			push @{$data}, [ "silence", $note->{'duration'}%256 ];
 			$nbytes += 2;
 		} else {
-			printf "\tfcb\t\%d,\%d\n", $note->{'note'} | 0x80, $note->{'duration'}%256;
+			push @{$data}, [ $note->{'note'}|0x80, $note->{'duration'}%256 ];
 			$nbytes += 2;
 		}
 		$note->{'xrest'} = 0;
 	} elsif ($note->{'setnote'}) {
 		if ($note->{'note'} == -1) {
-			printf "\tfcb\tsilence,\%d\t; setnote\n", $note->{'duration'}%256;
+			push @{$data}, [ "silence", $note->{'duration'}%256 ];
 			$nbytes += 2;
 		} else {
-			printf "\tfcb\tsetnote,\%d,\%d\n", $note->{'note'}, $note->{'duration'}%256;
+			push @{$data}, [ "setnote", $note->{'note'}, $note->{'duration'}%256 ];
 			$nbytes += 3;
 		}
 		$note->{'xrest'} = 0;
 	} elsif ($note->{'xrest'}) {
-		printf "\tfcb\txrest,\%d\n", $note->{'duration'}%256;
+		push @{$data}, [ "xrest", $note->{'duration'}%256 ];
 		$nbytes += 2;
 	} else {
-		printf "\tfcb\trest,\%d\n", $note->{'duration'}%256;
+		push @{$data}, [ "rest", $note->{'duration'}%256 ];
 		$nbytes += 2;
 		$note->{'xrest'} = 1;
 	}
@@ -327,7 +327,8 @@ for my $c (0..2) {
 		'duration' => 0,
 	);
 
-	printf "c\%d_data\n", $c+1;
+	my @data = ();
+
 	while (@{$chan_patch[$c]}) {
 		my $patch = shift @{$chan_patch[$c]};
 		my $freq = shift @{$chan_freq[$c]};
@@ -337,9 +338,9 @@ for my $c (0..2) {
 		my $port = $next_freq - $freq;
 
 		if ($patch != $note{'patch'}) {
-			print_note(\%note);
+			print_note(\%note, \@data);
 			#print "\t; patch changed\n";
-			printf "\tfcb\tsetpatch,\%d\n", $patch;
+			push @data, [ "setpatch", $patch ];
 			$nbytes += 2;
 			$note{'patch'} = $patch;
 		}
@@ -347,7 +348,7 @@ for my $c (0..2) {
 		my $adj_freq = $note{'freq'} + $note{'port'} * $note{'duration'};
 
 		if ($gate && !$old_gate) {
-			print_note(\%note);
+			print_note(\%note, \@data);
 			#print "\t; gate triggered\n";
 			my $new = closest_note($freq);
 			$note{'gate'} = 1;
@@ -360,7 +361,7 @@ for my $c (0..2) {
 		if ($port != $note{'port'}) {
 			my $cport = int(($port * $freq_scale) + 0.5);
 			if ($cport >= -128 && $cport <= 127) {
-				print_note(\%note);
+				print_note(\%note, \@data);
 				#print "\t; port changed $note{'port'} -> $port\n";
 				$note{'setport'} = 1;
 				$note{'port'} = $port;
@@ -373,7 +374,7 @@ for my $c (0..2) {
 		my $new_freq = sid_freq($new);
 		my $new_delta = abs($new_freq - $freq);
 		if ($new_delta < $delta && !($new == -1 && $note{'note'} == -1)) {
-			print_note(\%note);
+			print_note(\%note, \@data);
 			#print "\t; freq changed ($new_delta < $delta) $adj_freq -> $freq\n";
 			$note{'setnote'} = 1;
 			$note{'note'} = $new;
@@ -385,13 +386,51 @@ for my $c (0..2) {
 		$note{'duration'}++;
 		if ($note{'duration'} == 256) {
 			#print "\t; note timeout\n";
-			print_note(\%note);
+			print_note(\%note, \@data);
 			$note{'freq'} = $adj_freq;
 		}
 
 		$old_gate = $gate;
 	}
-	print_note(\%note);
+	if ($note{'duration'} > 0) {
+		print_note(\%note, \@data);
+	}
+
+	printf "c\%d_data\n", $c+1;
+	my $port = 0;
+	while (my $cmd = shift @data) {
+		if ($cmd->[0] eq 'setport') {
+			$port = $cmd->[1];
+		}
+		# peephole optimise...
+		if ($cmd->[0] eq 'setnote' && ($cmd->[2] == 1 || $port == 0)) {
+			my @ph_cmd = (@{$cmd});
+			my $note = $ph_cmd[1];
+			my $duration = $ph_cmd[2];
+			my $count = 0;
+			while ($count <= $#data && $data[$count]->[0] eq 'setnote' && $data[$count]->[1] == $note && ($data[$count]->[2] == 1 || $port == 0)) {
+				last if ($duration + $data[$count]->[2] > 256);
+				$duration += $data[$count]->[2];
+				$count++;
+				last if ($duration == 256);
+			}
+			if ($count > 1 || ($count > 0 && $port == 0)) {
+				for (my $i = 0; $i < $count; $i++) {
+					shift @data;
+				}
+				$ph_cmd[-1] = ($count + 1) % 256;
+				if ($port != 0) {
+					print "\tfcb\tsetport,0\n";
+				}
+				print "\tfcb\t".join(",",@ph_cmd)."\n";
+				if ($port != 0 && @data && $data[0]->[0] ne 'setport') {
+					print "\tfcb\tsetport,$port\n";
+				}
+				next;
+			}
+		}
+		print "\tfcb\t".join(",",@{$cmd})."\n";
+	}
 	printf "\tfcb\tjump,c\%d_data>>8,c\%d_data\n", $c+1, $c+1;
 	print "\n";
 }
