@@ -359,7 +359,8 @@ for my $c (0..2) {
 		}
 
 		if ($port != $note{'port'}) {
-			my $cport = int(($port * $freq_scale) + 0.5);
+			my $off = ($port >= 0) ? 0.5 : -0.5;
+			my $cport = int(($port * $freq_scale) + $off);
 			if ($cport >= -128 && $cport <= 127) {
 				print_note(\%note, \@data);
 				#print "\t; port changed $note{'port'} -> $port\n";
