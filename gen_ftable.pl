@@ -1,7 +1,7 @@
 #!/usr/bin/perl -wT
 
 my $cpu_freq = 14318180 / 16;
-my $mixer_cyc = 72;
+my $mixer_cyc = 70;
 
 my @note_names = ( "c", "cs", "d", "ds", "e", "f", "fs", "g", "gs", "a", "as", "b" );
 

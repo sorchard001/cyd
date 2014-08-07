@@ -102,7 +102,7 @@ nzz1.bin: WAVE_VOL = vol 0.167
 nzz0.bin: WAVE_VOL = vol 0.083
 
 $(WAVES_BIN):
-	sox -r 256 -n -e signed -b 8 -c 1 -t raw $@ $(WAVE_SYNTH) $(WAVE_VOL)
+	sox -r 256 -n -e signed -b 8 -c 1 -t raw $@ $(WAVE_SYNTH) $(WAVE_VOL) dcshift 0.33
 
 ####
 

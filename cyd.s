@@ -141,7 +141,6 @@ c1val		equ	*+2
 c2wave		equ	*+1
 c2val		equ	*+2
 		addb	>silent		; 5
-		eorb	#$80		; 2
 		stb	,u		; 4
 					; == 16
 
@@ -149,7 +148,7 @@ c2val		equ	*+2
 		bpl	mixer_loop	; 3
 					; == 7
 
-					; == 72 (mixer loop)
+					; == 70 (mixer loop)
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

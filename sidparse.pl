@@ -3,7 +3,7 @@
 use Data::Dumper;
 
 my $cpu_freq = 14318180 / 16;
-my $mixer_cyc = 72;
+my $mixer_cyc = 70;
 
 my $freq_scale = (65536 * 1000000) / (16777216 * ($cpu_freq / $mixer_cyc));
 
