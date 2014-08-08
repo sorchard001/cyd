@@ -114,23 +114,23 @@ mixer_loop
 c1off		equ	*+1
 		ldd	#$0000		; 3
 c1freq		equ	*+1
-		addd	#$0000		; 4
+		addd	#$0100		; 4
 		std	c1off		; 5
 		sta	c1val		; 4
 					; == 16
 
 c2off		equ	*+1
-		ldd	#$0000		; 3
+		ldd	#$5555		; 3
 c2freq		equ	*+1
-		addd	#$0000		; 4
+		addd	#$0100		; 4
 		std	c2off		; 5
 		sta	c2val		; 4
 					; == 16
 
 c3off		equ	*+1
-		ldd	#$0000		; 3
+		ldd	#$aaaa		; 3
 c3freq		equ	*+1
-		addd	#$0000		; 4
+		addd	#$0100		; 4
 		std	c3off		; 5
 		ldb	a,x		; 5
 					; == 17
