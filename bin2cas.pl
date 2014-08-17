@@ -12,6 +12,10 @@
 # v2.3: --dzip pipes binary data through dzip (requires dzip, obv.)
 #       --dunzip implies --zip and prefixes autorun dunzip loader
 # v2.4: use safe pipes for --dzip
+# v2.5: --autorun option for non-dzipped autorunning files
+#       --fast stores main binary part 33% faster (wav only)
+#       -O TYPE instead of --wav-out
+#       determine output type from file extension if possible
 
 use strict;
 
@@ -65,15 +69,17 @@ Generate a cassette image from binary input.
   -l ADDR              load address in filename block
   -e ADDR              exec address in filename block
   -n NAME              name in filename block
+  -O TYPE              output type (cas, wav) [from extension, cas if stdout]
   -o FILE              output file (defaults to stdout)
       --leader COUNT   leader size before filename block and data
       --no-filename    no filename block required in output
       --no-eof         no EOF block required in output
       --eof-data       EOF block allowed to contain the last chunk of data
-      --wav-out        output a WAV file instead of a CAS
   -r, --wav-rate RATE  sample rate for WAV output
+      --autorun        include autorun header
       --dzip           pipe file input through dzip
-      --dunzip         autorun header with dunzip (implies --dzip)
+      --dunzip         autorun header with dunzip (implies --autorun, --dzip)
+      --fast           emit data portion 33% faster for WAV output
 
 In standard cassette image mode, load and exec addresses are determined from
 the binary if DragonDOS or RSDOS binary format is specified, otherwise they
@@ -88,10 +94,13 @@ EOF
 	exit 0;
 }
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 my %ddos_to_tape_type = (
 		DDOS_TYPE_BASIC => TYPE_BASIC,
 		DDOS_TYPE_BINARY => TYPE_BINARY,
 		);
+
 # Wave data
 
 my @wav_header = (
@@ -111,11 +120,127 @@ my @wav_samples = (
 		0x36, 0x47, 0x5a, 0x6e
 		);
 
+# Autorun headers can include optional parts, concatenated and subject to
+# linking.
+
+my @code_load_0 = (
+	"load_part",
+		0x9f, 0x7e,		# stx	<$7e
+		0xad, 0x9f, 0xa0, 0x04,	# jsr	[CSRDON]
+	"l0",
+);
+
+my @code_load_flash = (
+		0xb6, ">cursor",	# lda	>cursor
+		0x88, 0x40,		# eora	#$40
+		0xb7, ">cursor",	# sta	>cursor
+);
+
+my @code_load_1 = (
+		0xad, 0x9f, 0xa0, 0x06,	# jsr	[BLKIN]
+		0x26, "\&<do_io_error",	# bne	do_io_error
+		0x9f, 0x7e,		# stx	<$7e
+		0x96, 0x7c,		# lda	<$7c
+		0x4c,			# inca
+		0x26, "\&<l0",		# bne	l0
+	"cas_off",
+		0xb6, 0xff, 0x21,	# lda	>$ff21
+		0x84, 0xf7,		# anda	#$f7
+		0xb7, 0xff, 0x21,	# sta	>$ff21
+	"do_rts",
+		0x39,			# rts
+	"do_io_error",
+		0x8d, "\&<cas_off",	# bsr	cas_off
+		0x8e, ">io_error",	# ldx	#io_error
+		0x8d, "\&<out_string",	# bsr	out_string
+	"l1",
+		0x20, "\&<l1",		# bra	l1
+	"out_string",
+		0xa6, 0x80,		# lda	,x+
+		0x27, "\&<do_rts",	# beq	do_rts
+		0xad, 0x9f, 0xa0, 0x02,	# jsr	[OUTCH]
+		0x20, "\&<out_string",	# bra	out_string
+	"io_error",
+		0x49, 0x2f, 0x4f, 0x20,	# fcc	"I/O "
+		0x45, 0x52, 0x52, 0x4f,	# fcc	"ERRO"
+		0x52, 0x00,		# fcc	"R",0
+);
+
+my @code_test_arch = (
+		0xb6, 0xa0, 0x00,	# lda	$a000
+		0x84, 0x20,		# anda	#$20
+		0x97, 0x10,		# sta	<$10
+);
+
+my @code_fast = (
+		0xcc, ">fast_pw",	# ldd	#fast_pw
+		0x0d, 0x10,		# tst	<$10
+		0x26, "\&<fl1",		# bne	fl1
+		0xdd, 0x92,		# std	<$92
+		0x97, 0x94,		# sta	<$94
+		0x20, "\&<fl2",		# bra	fl2
+	"fl1",
+		0xdd, 0x90,		# std	<$90
+		0x97, 0x8f,		# sta	<$8f
+	"fl2",
+);
+
+my @code_dunzip = (
+	"dunzip",
+		0x34, 0x06,		# pshs	d
+	"dunz_loop",
+		0xec, 0x81,
+		0x2a, "\&<dunz_run",	# bpl	dunz_run
+		0x5d,			# tstb
+		0x2a, "\&<dunz_7_7",	# bpl	dunz_7_7
+	"dunz_14_8",
+		0x58,			# lslb
+		0x47,			# asra
+		0x56,			# rorb
+		0x31, 0xcb,		# leay	d,u
+		0xe6, 0x80,		# ldb	,x+
+		0x20, "\&<dl0",		# bra	dl0
+	"dunz_7_7",
+		0x31, 0xc6,		# leay	a,u
+	"dl0",
+		0xa6, 0xa0,		# lda	,y+
+		0xa7, 0xc0,		# sta	,u+
+		0x5c,			# incb
+		0x28, "\&<dl0",		# bvc	dl0
+		0x20, "\&<dl2",		# bra	dl2
+	"dl1",
+		0xe6, 0x80,		# ldb	,x+
+	"dunz_run",
+		0xe7, 0xc0,		# stb	,u+
+		0x4c,			# inca
+		0x28, "\&<dl1",		# bvc	dl1
+	"dl2",
+		0xac, 0xe4,		# cmpx	,s
+		0x25, "\&<dunz_loop",	# blo	dunz_loop
+		0x35, 0x86,		# puls	d,pc
+);
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# Relocation
+
+my $mc_org;
+my $mc_pc;
+my %mc_label = ();
+my @mc_link;
+my $mc_data;
+
+# WAV
+
 my $sample_rate = 9600;
 my $bits_per_sample = 8;
 my $num_channels = 1;
 my $sample_count = 0;
 my $write_cycles = 0;
+my $fast_cycles = 176;
+my $slow_cycles = 352;
+
+# General
 
 my $load;
 my $exec;
@@ -126,6 +251,8 @@ my $eof_data = 0;
 my $leader = 256;
 my $wav_out = 0;
 my $mode = BINARY_RAW;
+my $autorun = 0;
+my $fast = 0;
 my $dunzip = 0;
 my $zip = 0;
 my @blocks = ();
@@ -163,6 +290,11 @@ while (my $opt = shift @ARGV) {
 		}
 		open($o, ">", $f) or die $!;
 		STDOUT->fdopen(\*$o, 'w') or die $!;
+		if ($f =~ /\.cas$/i) {
+			$wav_out = 0;
+		} elsif ($f =~ /\.wav$/i) {
+			$wav_out = 1;
+		}
 	} elsif ($opt eq '--leader') {
 		my $v = shift @ARGV;
 		if ($v =~ /^(\d+|0x[\da-f]+)$/i) {
@@ -181,9 +313,14 @@ while (my $opt = shift @ARGV) {
 		$wav_out = 1;
 	} elsif ($opt eq '-r' || $opt eq '--wav-rate') {
 		$sample_rate = shift @ARGV;
+	} elsif ($opt eq '--autorun') {
+		$autorun = 1;
+	} elsif ($opt eq '--fast') {
+		$fast = 1;
 	} elsif ($opt eq '--dzip') {
 		$zip = 1;
 	} elsif ($opt eq '--dunzip') {
+		$autorun = 1;
 		$dunzip = 1;
 		$zip = 1;
 		$want_fnblock = 1;
@@ -205,6 +342,8 @@ my $in;
 open($in, "<", $file) or die "failed to open $file: $!\n";
 binmode $in;
 binmode STDOUT;
+
+$fast = 0 unless ($wav_out);
 
 my $cycles_per_frame = 14318180 / $sample_rate;
 my $bytes_per_sample = $bits_per_sample >> 3;
@@ -350,40 +489,73 @@ if (scalar(@blocks) > 0) {
 
 	$exec //= $start;
 
+	$mc_label{'orig_load'} = $orig_load;
+	$mc_label{'load'} = $load;
+	$mc_label{'size'} = $size;
+	$mc_label{'load_end'} = $load + $size;
+	$mc_label{'exec'} = $exec;
+	# this combination of slow cycle pulse width boundaries seems to allow
+	# reliable tape speed variance of +/-6% when emitting 9600Hz WAV
+	$mc_label{'fast_pw'} = 0x0c06;
+
 	if ($want_fnblock) {
 		bytes_out("U" x $leader);
-		my $fndata = sprintf("\%-8s", $name);
-		if ($dunzip) {
-			# autorun dunzip loader
-			$fndata .= pack("H*", "0200003a0000a6");
-			$fndata .= pack("H*n", "8e", $load);
-			$fndata .= pack("H*n", "8d0e8e", $load);
-			$fndata .= pack("H*n", "cc", $load + $size);
-			$fndata .= pack("H*n", "ce", $orig_load);
-			$fndata .= pack("H*n", "8d3c7e", $exec);
-			$fndata .= pack("H*", "9f7ead9fa004ad9fa00626109f7e967c");
-			$fndata .= pack("H*", "4c26f3b6ff2184f7b7ff21398df5");
-			$fndata .= pack("H*", "8e022b8d0220fea68027f2ad9fa00220");
-			$fndata .= pack("H*", "f6492f4f204552524f5200fd025bec81");
-			$fndata .= pack("H*", "2a195d2a0958475631cbe680200231c6");
-			$fndata .= pack("H*", "a6a0a7c05c28f92007e680e7c04c28f9");
-			$fndata .= pack("H*", "8c000025d939");
+		mcdata_org(0x01da);
+		mcdata_add(\sprintf("\%-8s", $name));
+		if ($autorun) {
+			# autorun...
+			mcdata_add([
+				0x02, 0x00, 0x00, "colon", 0x3a, 0x00, 0x00, 0xa6,
+				"exec_loader",
+				]);
+			if ($fast) {
+				mcdata_add(\@code_test_arch);
+				mcdata_add(\@code_fast);
+			}
+			mcdata_add([
+					0x8e, ">load",		# ldx	#load
+					0x8d, "\&<load_part",	# bsr	load_part
+				]);
+			if ($dunzip) {
+				mcdata_add([
+					0x8e, ">load",		# ldx	#load
+					0xcc, ">load_end",	# ldd	#load_end
+					0xce, ">orig_load",	# ldu	#orig_load
+					0x8d, "\&<dunzip",	# bsr	dunzip
+				]);
+			}
+			mcdata_add([
+					0x7e, ">exec",		# jmp	exec
+			]);
+			mcdata_add(\@code_load_0);
+			mcdata_add(\@code_load_1);
+			mcdata_add(\@code_dunzip) if ($dunzip);
 		} else {
 			# standard filename block
-			$fndata .= pack("Cxxnn", $filetype, $exec, $load);
+			mcdata_add(\pack("Cxxnn", $filetype, $exec, $load));
 		}
-		block_out(BLOCK_NAMEFILE, $fndata);
-		if ($dunzip) {
+		mcdata_link();
+		block_out(BLOCK_NAMEFILE, $mc_data);
+		if ($autorun) {
 			if ($wav_out) {
 				sample_out(0x80, 0xda5c * 8 * 16);
 			}
 			bytes_out("U" x $leader);
-			block_out(BLOCK_EOF, pack("H*", "01e57e01e9"));
+			mcdata_org(0x00a6);
+			mcdata_add([
+					">colon",		# fdb	colon
+					0x7e, ">exec_loader",	# jmp	exec_loader
+				]);
+			mcdata_link();
+			block_out(BLOCK_EOF, $mc_data);
 		}
 		if ($wav_out) {
 			sample_out(0x80, 0xda5c * 8 * 16);
 		}
 	}
+
+	$fast_cycles = 112 if ($fast);
+	$slow_cycles = 256 if ($fast);
 
 	bytes_out("U" x $leader);
 
@@ -554,8 +726,7 @@ sub bytes_out {
 	}
 	for my $byte (unpack("C*", $data)) {
 		for (0..7) {
-			my $cycles = 176;
-			$cycles *= 2 if (!($byte & 1));
+			my $cycles = ($byte & 1) ? $fast_cycles : $slow_cycles;
 			for (@wav_samples) {
 				sample_out($_, $cycles);
 			}
@@ -572,5 +743,68 @@ sub sample_out {
 		$write_cycles -= $cycles_per_frame;
 		print pack("C", $samp);
 		$sample_count++;
+	}
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# Initialise machine code data.  Note, does not clear label table.
+
+sub mcdata_org {
+	$mc_org = shift;
+	$mc_pc = $mc_org;
+	@mc_link = ();
+	$mc_data = "";
+}
+
+# Add machine code data.
+
+sub mcdata_add {
+	my $text = shift;
+	if (ref($text) eq 'ARRAY') {
+		for my $byte (@{$text}) {
+			if ($byte =~ /^[a-z]/) {
+				$mc_label{$byte} = $mc_pc;
+			} elsif ($byte =~ /^\&?</) {
+				$mc_pc++;
+				push @mc_link, [ $byte, $mc_pc ];
+				$mc_data .= "\x00";
+			} elsif ($byte =~ /^\&?>/) {
+				$mc_pc += 2;
+				push @mc_link, [ $byte, $mc_pc ];
+				$mc_data .= "\x00\x00";
+			} else {
+				$mc_pc++;
+				$mc_data .= pack("C", $byte);
+			}
+		}
+	} elsif (ref($text) eq 'SCALAR') {
+		$mc_data .= $$text;
+		$mc_pc += bytes::length($$text);
+	}
+}
+
+# "Link" the machine code - replace all the entries in @mc_link with computed
+# values.
+
+sub mcdata_link {
+	for my $r (@mc_link) {
+		my $rlabel = $r->[0];
+		my $pc = $r->[1];
+		my $off = $pc - $mc_org;
+		if ($rlabel =~ /^(\&)?([<>])(.*)/) {
+			my ($rel,$size,$label) = ($1,$2,$3);
+			my $addr = $mc_label{$label};
+			$size = ($size eq '<') ? 1 : 2;
+			$off -= $size;
+			$addr -= $pc if ($rel);
+			my $subdata;
+			if ($size == 1) {
+				$subdata = pack("C", $addr & 0xff);
+			} else {
+				$subdata = pack("n", $addr & 0xffff);
+			}
+			bytes::substr($mc_data, $off, $size, $subdata);
+		}
 	}
 }
