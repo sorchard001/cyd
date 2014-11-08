@@ -8,7 +8,7 @@ all: cyd.bin cyd.cas
 ####
 
 ASM6809 = asm6809 -v
-BIN2CAS = ./bin2cas.pl
+BIN2CAS = bin2cas.pl
 CLEAN =
 EXTRA_DIST =
 
@@ -67,11 +67,8 @@ sid/Zoids.sd: SPFLAGS = -t105
 %.bin: %.s
 	$(ASM6809) $(AFLAGS) -l $(<:.s=.lis) -o $@ $<
 
-%.cas:
+%.cas %.wav:
 	$(BIN2CAS) $(B2CFLAGS) -o $@ $<
-
-%.wav:
-	$(BIN2CAS) $(B2CFLAGS) --wav-out -o $@ $<
 
 %.dz: %
 	dzip -c $< > $@
@@ -109,11 +106,8 @@ $(WAVES_BIN):
 %.bin: %.s
 	$(ASM6809) $(AFLAGS) -l $(<:.s=.lis) -o $@ $<
 
-%.cas: %.bin
+%.cas %.wav: %.bin
 	$(BIN2CAS) $(B2CFLAGS) -o $@ $<
-
-%.wav: %.bin
-	$(BIN2CAS) $(B2CFLAGS) --wav-out -o $@ $<
 
 %.sd: %.sid ./Makefile
 	siddump $(SPFLAGS) $< > $@
@@ -138,7 +132,7 @@ cyd.bin: AFLAGS = -D
 cyd.bin: ftable.s tune.s $(WAVES_BIN)
 CLEAN += cyd.lis cyd.bin
 
-cyd.cas cyd.wav: B2CFLAGS = -D --eof-data --dunzip
+cyd.cas cyd.wav: B2CFLAGS = --autorun -n "CYD" --eof-data --fast -D
 cyd.cas cyd.wav: cyd.bin
 CLEAN += cyd.cas cyd.wav
 
