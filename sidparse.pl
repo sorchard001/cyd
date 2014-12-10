@@ -207,7 +207,7 @@ for my $c (0..2) {
 				$env_r = find_envelope(\@waves);
 				my $patch = find_patch($ads_duration, $env_ads, $env_r);
 				for (my $j = 0; $j < $note_duration; $j++) {
-					push @chan_patch[$c], $patch;
+					push @{$chan_patch[$c]}, $patch;
 				}
 				$note_duration = 0;
 				$ads_duration = 0;
