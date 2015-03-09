@@ -14,6 +14,9 @@ reg_pia1_ddrb		equ	$ff22
 reg_pia1_pdrb		equ	$ff22
 reg_pia1_crb		equ	$ff23
 
+; SAM register base
+reg_sam_base		equ	$ffc0
+
 ; SAM VDG Mode
 reg_sam_v0c		equ	$ffc0
 reg_sam_v0s		equ	$ffc1
@@ -53,10 +56,3 @@ reg_sam_r0c		equ	$ffd6
 reg_sam_r0s		equ	$ffd7
 reg_sam_r1c		equ	$ffd8
 reg_sam_r1s		equ	$ffd9
-
-mpu_rate_fast		macro
-			sta	reg_sam_r1s
-			endm
-mpu_rate_slow		macro
-			sta	reg_sam_r1c
-			endm

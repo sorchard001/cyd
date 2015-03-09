@@ -398,6 +398,7 @@ for my $c (0..2) {
 	}
 
 	printf "c\%d_data\n", $c+1;
+	my @out = ();
 	my $port = 0;
 	while (my $cmd = shift @data) {
 		if ($cmd->[0] eq 'setport') {
@@ -421,16 +422,19 @@ for my $c (0..2) {
 				}
 				$ph_cmd[-1] = ($count + 1) % 256;
 				if ($port != 0) {
-					print "\tfcb\tsetport,0\n";
+					push @out, "\tfcb\tsetport,0";
 				}
-				print "\tfcb\t".join(",",@ph_cmd)."\n";
+				push @out, "\tfcb\t".join(",",@ph_cmd);;
 				if ($port != 0 && @data && $data[0]->[0] ne 'setport') {
-					print "\tfcb\tsetport,$port\n";
+					push @out, "\tfcb\tsetport,$port";
 				}
 				next;
 			}
 		}
-		print "\tfcb\t".join(",",@{$cmd})."\n";
+		push @out, "\tfcb\t".join(",",@{$cmd});
+	}
+	for (@out) {
+		print "\t$_\n";
 	}
 	printf "\tfcb\tjump,c\%d_data>>8,c\%d_data\n", $c+1, $c+1;
 	print "\n";

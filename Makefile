@@ -132,7 +132,7 @@ cyd.bin: AFLAGS = -D
 cyd.bin: ftable.s tune.s $(WAVES_BIN)
 CLEAN += cyd.lis cyd.bin
 
-cyd.cas cyd.wav: B2CFLAGS = --autorun -n "CYD" --eof-data --fast -D
+cyd.cas cyd.wav: B2CFLAGS = --autorun -n "CYD" --eof-data --dzip --fast -D
 cyd.cas cyd.wav: cyd.bin
 CLEAN += cyd.cas cyd.wav
 
