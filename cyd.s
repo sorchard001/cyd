@@ -2,11 +2,15 @@
 ; ... or "Dragon's Song"
 ; ... or "There's Good CyD"
 
-; Copyright 2013-2014 Ciaran Anscomb
+; Copyright 2013-2015 Ciaran Anscomb
 
 ; -----------------------------------------------------------------------
 
 		include	"dragonhw.s"
+
+	if !VSYNC
+frag_dur	equ	247		; just under 50 fragments per second
+	endif
 
 ; -----------------------------------------------------------------------
 
@@ -50,7 +54,7 @@ ftable		include	"ftable.s"
 
 ; -----------------------------------------------------------------------
 
-; The playback core (and most of the song processing) fits within one page
+; The playback core (and most of the tune processing) fits within one page
 ; of memory.  Keep DP pointed at this page, and everything should stay
 ; fast.
 
@@ -100,8 +104,12 @@ c3wave		equ	*+1
 		ldx	#silent
 
 		ldu	#reg_pia1_pdra
+	if VSYNC
 		leay	-29,u		; y=reg_pia0_crb
 		lda	-1,y		; clear outstanding IRQ
+	else
+		ldy	#frag_dur
+	endif
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -144,15 +152,23 @@ c2val		equ	*+2
 		stb	,u		; 4
 					; == 16
 
+	if VSYNC
 		lda	,y		; 4
 		bpl	mixer_loop	; 3
 					; == 7
-
 					; == 70 (mixer loop)
+	else
+		leay	-1,y		; 5
+		bne	mixer_loop	; 3
+					; == 8
+					; == 71 (mixer loop)
+	endif
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+	if VSYNC
 		sta	reg_sam_r1s	; FAST CPU rate
+	endif
 
 ; Add portamento
 
@@ -167,15 +183,15 @@ c\1port		equ	*+2
 		chan_port	2
 		chan_port	3
 
-; Song processing.  Decrement the command timer and when it reaches zero,
+; Tune processing.  Decrement the command timer and when it reaches zero,
 ; fetch & process the next command.
 
-process_song
+process_tune
 
 chan_handle	macro
 		dec	c\1ctimer
 		bne	c\1skip
-c\1songptr	equ	*+1
+c\1tuneptr	equ	*+1
 		ldu	#$0000
 c\1nextbyte	lda	,u+
 		bpl	jump_cmd_c\1
@@ -186,18 +202,19 @@ c\1ads_time	equ	*+1
 c\1env_ads	equ	*+1
 		ldx	#$0000
 		stx	c\1env_ptr
-c\1notelength	equ	*+1
-		ldb	#$00
-		bne	c\1setnote
+;c\1notelength	equ	*+1
+;		ldb	#$00
+;		bne	c\1setnote
 		pulu	b	; b=time
 c\1setnote	stb	c\1ctimer
+c\1noteonly
 c\1tp		equ	*+1
 		adda	#$00
 		lsla
 		ldx	#ftable+128
 		ldd	a,x
 		std	c\1freq
-c\1done		stu	c\1songptr
+c\1done		stu	c\1tuneptr
 c\1skip
 		endm
 
@@ -205,7 +222,9 @@ c\1skip
 		chan_handle	2
 		chan_handle	3
 
+	if VSYNC
 		sta	reg_sam_r1c	; AD CPU rate
+	endif
 
 		rts
 
@@ -366,22 +385,22 @@ jumptable_c\1
 
 ; -----------------------------------------------------------------------
 
-select_song
-		ldx	#song_table
+select_tune
+		ldx	#tune_table
 		ldb	#6
 		mul
 		leax	d,x
 		ldd	,x++
-		std	c1songptr
+		std	c1tuneptr
 		ldd	,x++
-		std	c2songptr
+		std	c2tuneptr
 		ldd	,x++
-		std	c3songptr
+		std	c3tuneptr
 		lda	#1
 		sta	c1ctimer
 		sta	c2ctimer
 		sta	c3ctimer
-		jmp	process_song
+		jmp	process_tune
 
 ; -----------------------------------------------------------------------
 
@@ -406,17 +425,21 @@ start
 		sta	reg_pia1_cra	; printer FIRQ disabled
 
 		lda	#0
-		jsr	select_song
+		jsr	select_tune
 
+	if VSYNC
 		; AD CPU rate
 		sta	reg_sam_r0s
 		sta	reg_sam_r1c
+	endif
 
 1		jsr	play_frag
 		bra	1B
 
 ; Test tune
 
-		include	"tune.s"
+		include	"tune0.s"
+
+tune_table	fdb tune0_c1,tune0_c2,tune0_c3	; tune 0
 
 		end	start

@@ -16,51 +16,51 @@ EXTRA_DIST =
 
 # SID parsing
 
-sid/1941.sd: SPFLAGS = -t100 -f1
-sid/1942.sd: SPFLAGS = -t200
-sid/1943.sd: SPFLAGS = -t80 -a2
-sid/Auf_Wiedersehen_Monty.sd: SPFLAGS = -t81
-sid/Battle_Valley.sd: SPFLAGS = -t75
-sid/Blood_Valley.sd: SPFLAGS = -t192
-sid/Crazy_Comets.sd: SPFLAGS = -t110 -f1
-sid/Chordian.sd: SPFLAGS = -t88 -f3
-sid/Comic_Bakery.sd: SPFLAGS = -t98
-sid/Commando.sd: SPFLAGS = -t95 -f1
-sid/Cream_of_the_Earth.sd: SPFLAGS = -t145 -f8
-sid/Cybernoid.sd: SPFLAGS = -t89
-sid/Cybernoid_II.sd: SPFLAGS = -t80
-sid/Delta.sd: SPFLAGS = -t114 -f2 -a11
-sid/Future_Knight.sd: SPFLAGS = -t188
-sid/Ghosts_n_Goblins.sd: SPFLAGS = -t179 -a1
-sid/Great_Giana_Sisters.sd: SPFLAGS = -t200 -f7
-sid/Head_Over_Heels.sd: SPFLAGS = -t149
-sid/Hyper_Sports.sd: SPFLAGS = -t180 -a25
-sid/Katakis.sd: SPFLAGS = -t112 -f1
-sid/Last_Ninja.sd: SPFLAGS = -t92 -f1 -a2
-sid/Lightforce.sd: SPFLAGS = -t125 -f1
-sid/Monique_Alcoholique.sd: SPFLAGS = -t90 -f1
-sid/Monty_on_the_Run.sd: SPFLAGS = -t91
-sid/Ocean_Loader_1.sd: SPFLAGS = -t138
-sid/Ocean_Loader_2.sd: SPFLAGS = -t148 -f1
-sid/Ocean_Loader_3.sd: SPFLAGS = -t125
-sid/Ocean_Loader_4.sd: SPFLAGS = -t69
-sid/Paranoimia.sd: SPFLAGS = -t120 -f5
-sid/Quadrophenia.sd: SPFLAGS = -t120 -f7
-sid/R-Type.sd: SPFLAGS = -t90 -f3
-sid/Rasputin.sd: SPFLAGS = -t136
-sid/Redsector_3.sd: SPFLAGS = -t97 -f1
-sid/Rock_Sid_compo_version.sd: SPFLAGS = -t79 -f6
-sid/Romeo_Knight_Mix.sd: SPFLAGS = -t220
-sid/Sanxion.sd: SPFLAGS = -t112 -f3
-sid/Shadow_of_the_Beast.sd: SPFLAGS = -t93 -f1
-sid/Smash_TV.sd: SPFLAGS = -t150
-sid/Speed_It_Up.sd: SPFLAGS = -t100
-sid/Thing_on_a_Spring.sd: SPFLAGS = -t155 -f1
-sid/Turrican.sd: SPFLAGS = -t150 -f1
-sid/Turrican_3_1-3.sd: SPFLAGS = -t108
-sid/Warhawk.sd: SPFLAGS = -t94 -f1
-sid/Xenon_2_Megablast.sd: SPFLAGS = -t117
-sid/Zoids.sd: SPFLAGS = -t105
+sid/1941.sd: SDFLAGS = -t100 -f1
+sid/1942.sd: SDFLAGS = -t200
+sid/1943.sd: SDFLAGS = -t80 -a2
+sid/Auf_Wiedersehen_Monty.sd: SDFLAGS = -t81
+sid/Battle_Valley.sd: SDFLAGS = -t75
+sid/Blood_Valley.sd: SDFLAGS = -t192
+sid/Crazy_Comets.sd: SDFLAGS = -t110 -f1
+sid/Chordian.sd: SDFLAGS = -t88 -f3
+sid/Comic_Bakery.sd: SDFLAGS = -t98
+sid/Commando.sd: SDFLAGS = -t95 -f1
+sid/Cream_of_the_Earth.sd: SDFLAGS = -t144 -f8
+sid/Cybernoid.sd: SDFLAGS = -t89
+sid/Cybernoid_II.sd: SDFLAGS = -t80
+sid/Delta.sd: SDFLAGS = -t114 -f2 -a11
+sid/Future_Knight.sd: SDFLAGS = -t188
+sid/Ghosts_n_Goblins.sd: SDFLAGS = -t179 -a1
+sid/Great_Giana_Sisters.sd: SDFLAGS = -t200 -f7
+sid/Head_Over_Heels.sd: SDFLAGS = -t149
+sid/Hyper_Sports.sd: SDFLAGS = -t180 -a25
+sid/Katakis.sd: SDFLAGS = -t112 -f1
+sid/Last_Ninja.sd: SDFLAGS = -t92 -f1 -a2
+sid/Lightforce.sd: SDFLAGS = -t125 -f1
+sid/Monique_Alcoholique.sd: SDFLAGS = -t90 -f1
+sid/Monty_on_the_Run.sd: SDFLAGS = -t91
+sid/Ocean_Loader_1.sd: SDFLAGS = -t138
+sid/Ocean_Loader_2.sd: SDFLAGS = -t148 -f1
+sid/Ocean_Loader_3.sd: SDFLAGS = -t125
+sid/Ocean_Loader_4.sd: SDFLAGS = -t69
+sid/Paranoimia.sd: SDFLAGS = -t120 -f5
+sid/Quadrophenia.sd: SDFLAGS = -t120 -f7
+sid/R-Type.sd: SDFLAGS = -t90 -f3
+sid/Rasputin.sd: SDFLAGS = -t136
+sid/Redsector_3.sd: SDFLAGS = -t97 -f1
+sid/Rock_Sid_compo_version.sd: SDFLAGS = -t79 -f6
+sid/Romeo_Knight_Mix.sd: SDFLAGS = -t220
+sid/Sanxion.sd: SDFLAGS = -t112 -f3
+sid/Shadow_of_the_Beast.sd: SDFLAGS = -t93 -f1
+sid/Smash_TV.sd: SDFLAGS = -t150
+sid/Speed_It_Up.sd: SDFLAGS = -t100
+sid/Thing_on_a_Spring.sd: SDFLAGS = -t155 -f1
+sid/Turrican.sd: SDFLAGS = -t150 -f1
+sid/Turrican_3_1-3.sd: SDFLAGS = -t108
+sid/Warhawk.sd: SDFLAGS = -t94 -f1
+sid/Xenon_2_Megablast.sd: SDFLAGS = -t117
+sid/Zoids.sd: SDFLAGS = -t105
 
 ####
 
@@ -68,7 +68,7 @@ sid/Zoids.sd: SPFLAGS = -t105
 	$(ASM6809) $(AFLAGS) -l $(<:.s=.lis) -o $@ $<
 
 %.cas %.wav:
-	$(BIN2CAS) $(B2CFLAGS) -o $@ $<
+	$(BIN2CAS) $(B2CFLAGS) $(B2CFLAGS_ADD) -o $@ $<
 
 %.dz: %
 	dzip -c $< > $@
@@ -107,34 +107,41 @@ $(WAVES_BIN):
 	$(ASM6809) $(AFLAGS) -l $(<:.s=.lis) -o $@ $<
 
 %.cas %.wav: %.bin
-	$(BIN2CAS) $(B2CFLAGS) -o $@ $<
+	$(BIN2CAS) $(B2CFLAGS) $(B2CFLAGS_ADD) -o $@ $<
 
 %.sd: %.sid ./Makefile
-	siddump $(SPFLAGS) $< > $@
+	siddump $(SDFLAGS) $< > $@
 
+SPFLAGS = -c 71
 %.s: %.sd ./sidparse.pl
-	./sidparse.pl < $< > $@
+	./sidparse.pl $(SPFLAGS) < $< > $@
 
 ####
 
-tune.s: $(TUNE).s Makefile
+tune0.s: $(TUNE).s Makefile
 	echo " include \"$(TUNE).s\"" > $@
-	echo "song_table fdb c1_data,c2_data,c3_data" >> $@
-CLEAN += tune.s
-EXTRA_DIST += tune.s
+CLEAN += tune0.s
+EXTRA_DIST += tune0.s
 
+GFTFLAGS = -c 71
 ftable.s: ./gen_ftable.pl
-	./gen_ftable.pl > $@
+	./gen_ftable.pl $(GFTFLAGS) > $@
 CLEAN += ftable.s
 EXTRA_DIST += ftable.s
 
 cyd.bin: AFLAGS = -D
-cyd.bin: ftable.s tune.s $(WAVES_BIN)
+cyd.bin: ftable.s tune0.s $(WAVES_BIN)
 CLEAN += cyd.lis cyd.bin
 
-cyd.cas cyd.wav: B2CFLAGS = --autorun -n "CYD" --eof-data --dzip --fast -D
+cyd.cas cyd.wav: B2CFLAGS_ADD = --autorun -n "CYD" --eof-data --dzip --fast -D
 cyd.cas cyd.wav: cyd.bin
 CLEAN += cyd.cas cyd.wav
+
+ifdef VSYNC
+cyd.bin: AFLAGS += -d VSYNC
+GFTFLAGS = -c 70
+SPFLAGS = -c 70
+endif
 
 ####
 

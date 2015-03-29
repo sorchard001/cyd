@@ -1,9 +1,14 @@
 #!/usr/bin/perl
 
-use Data::Dumper;
+#use Data::Dumper;
+use Getopt::Long;
 
 my $cpu_freq = 14318180 / 16;
-my $mixer_cyc = 70;
+my $mixer_cyc = 71;
+
+Getopt::Long::Configure("bundling", "auto_help");
+
+GetOptions("cycles|c=i" => \$mixer_cyc);
 
 my $freq_scale = (65536 * 1000000) / (16777216 * ($cpu_freq / $mixer_cyc));
 
@@ -397,7 +402,7 @@ for my $c (0..2) {
 		print_note(\%note, \@data);
 	}
 
-	printf "c\%d_data\n", $c+1;
+	printf "tune0_c\%d\n", $c+1;
 	my @out = ();
 	my $port = 0;
 	while (my $cmd = shift @data) {
@@ -436,7 +441,7 @@ for my $c (0..2) {
 	for (@out) {
 		print "\t$_\n";
 	}
-	printf "\tfcb\tjump,c\%d_data>>8,c\%d_data\n", $c+1, $c+1;
+	printf "\tfcb\tjump,tune0_c\%d>>8,tune0_c\%d\n", $c+1, $c+1;
 	print "\n";
 }
 
@@ -474,3 +479,19 @@ sub voice_ampl_to_wave {
 	}
 	return 'silent';
 }
+
+__END__
+
+=head1 sidparse.pl
+
+sidparse.pl - convert siddump output into CyD data
+
+=head1 SYNOPSIS
+
+sidparse.pl [OPTION]...
+
+ Options:
+   -c, --cycles C       mixer loop takes C cycles [71]
+
+=cut
+

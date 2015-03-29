@@ -1,13 +1,20 @@
 #!/usr/bin/perl -wT
 
-my $cpu_freq = 14318180 / 16;
-my $mixer_cyc = 70;
+use Getopt::Long;
 
-my @note_names = ( "c", "cs", "d", "ds", "e", "f", "fs", "g", "gs", "a", "as", "b" );
+my $cpu_freq = 14318180 / 16;
+my $mixer_cyc = 71;
 
 my $mbase = 69;   # A4
 my $mfreq = 440;
 
+Getopt::Long::Configure("bundling", "auto_help");
+
+GetOptions("cycles|c=i" => \$mixer_cyc,
+		"base|b=i", \$mbase,
+		"base-freq|f=i", \$mfreq);
+
+my @note_names = ( "c", "cs", "d", "ds", "e", "f", "fs", "g", "gs", "a", "as", "b" );
 my @note_map = ( );
 
 for my $m (64..127,0..63) {
@@ -29,3 +36,20 @@ print "\n";
 for (@note_map) {
 	print "$_->[0]\tequ\t$_->[1]\n";
 }
+
+__END__
+
+=head1 gen_ftable.pl
+
+gen_ftable.pl - Generate a frequency lookup table for CyD
+
+=head1 SYNOPSIS
+
+gen_ftable.pl [OPTION]...
+
+ Options:
+  -c, --cycles C       mixer loop takes C cycles [71]
+  -b, --base N         note base [69]
+  -f, --base-freq HZ   frequency at note base [440]
+
+=cut

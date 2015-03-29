@@ -31,7 +31,7 @@ dcr	equ	cr+qv
 mn	equ	cr*2
 sb	equ	mn*2
 
-c1_data
+tune0_c1
 	fcb	setpatch,1
 	fcb	setport,0
 1
@@ -57,7 +57,7 @@ bass
 	fcb	c2,sq
 	fcb	return
 
-c2_data
+tune0_c2
 	fcb	setpatch,2
 1
 	fcb	silence,sq*12
@@ -83,7 +83,7 @@ trill
 	fcb	setport,0
 	fcb	return
 
-c3_data
+tune0_c3
 	fcb	setpatch,3
 1
 	fcb	a4,sq
