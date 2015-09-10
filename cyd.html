@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+
+<style type='text/css' media='screen'>
+
+body { max-width: 48rem; }
+
+</style>
+
+<style type='text/css' media='print'>
+
+body { font-size: 12pt; }
+pre { font-size: 12pt; letter-spacing: 0.1em; }
+code { font-size: 11pt; letter-spacing: 0.1em; }
+a { color: inherit; text-decoration: none; }
+
+</style>
+
+<style type='text/css' media='screen,print'>
+
+body { font-family: "Liberation Serif", serif; }
+code,pre { font-family: "Inconsolata", monospace; }
+code { font-weight: bold; }
+var { font-style: italic; }
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.1875rem; }
+h3 { font-size: 1rem; } 
+code,pre { font-size: small; }
+
+body { margin-left: 3rem; padding-left: 0.75rem; padding-right: 0.75rem; }
+h1 { margin-left: -3rem; }
+h2 { margin-left: -3rem; }
+h3 { margin-left: -1.5rem; }
+pre { margin-left: 1.5rem; }
+table { margin-left: 1.5rem; }
+
+h1 { margin-top: 1.3125rem; margin-bottom: 1.3125rem; }
+h2 { margin-top: 1.1875rem; margin-bottom: 0.1875rem; }
+h3 { margin-top: 1.125rem; margin-bottom: 0.125rem; }
+p { margin-top: 1rem; margin-bottom: 1rem; }
+pre { margin-top: 1rem; margin-bottom: 1rem; }
+
+h1+* { margin-top: 0.3125rem; }
+h2+* { margin-top: 0.1875rem; }
+h3+* { margin-top: 0.125rem; }
+
+dd { margin-top: none; margin-bottom: 1rem; }
+dl.compact dd { margin-bottom: 0.0625rem; }
+
+h1,h2,h3 { page-break-after: avoid; }
+h1+*,h2+*,h3+* { page-break-before: avoid; }
+dt+dd { page-break-before: avoid; }
+
+p { text-align: justify; }
+dd { text-align: justify; }
+
+table { border-collapse: collapse; border-style: hidden hidden none hidden; }
+table thead { border-bottom: solid; }
+table thead th { text-align: left; }
+table tbody { border-bottom: solid thin; }
+table tbody th { text-align: left; }
+table td, table th { border-left: solid thin; border-right: solid thin; border-bottom: none; vertical-align: top; padding: 0 0.1875rem 0.0625rem; }
+
+</style>
+
+<body>
+
+<h1>Cân y Ddraig (CyD)</h1>
+
+<p>A 3-channel music player for the Dragon. Inspired by Rem's CoCoSID, this is
+rewritten with a tight core and tune scripting engine.
+
+<h2>Waves, Envelopes and Patches</h2>
+
+<p>Waves are the basic sound element. Each wave is 256 bytes, and page-aligned
+so that only an 8 bit value is required to reference it. They will usually
+form one cycle of a particular waveform shape (e.g., square or sawtooth).
+
+<p>Because we don't have enough CPU time to dynamically calculate an ADSR
+(Attack, Decay, Sustain, Release) sound envelope, an envelope here is simply
+defined as a list of wave identifiers (which is the first 8 bits of their
+address), ending in a zero byte. A special label, <code>envelope_0</code> is
+expected to point to a silent envelope, and is used by the <code>silence</code>
+command.
+
+<p>A patch is simply a pair of envelopes - intended to represent first the
+Attack/Decay/Sustain (ADS) portion of an instrument, and then the Release (R)
+portion - plus a envelope timer for the ADS portion. Whenever a new note is
+played, the current envelope and timer is reset to the ADS data.
+
+<p>Patch data is 5 bytes: ADS timer (1 byte), ADS pointer (2 bytes), R pointer
+(2 bytes). cyd.s expects to find a table labelled <code>patch_table</code>,
+into which the <code>setpatch</code> command will index.
+
+<h2>Writing a tune</h2>
+
+<p><code>tune_table</code> contains an entry per tune. Each entry is a series
+of three 16-bit addresses: the absolute base address of the tune data for each
+of the three channels.
+
+<p>Each channel's tune data consists of a series of commands. Probably one of
+the first commands before any notes should be <code>setpatch</code> so that
+when the tune loops, the appropriate patch is re-selected. To keep the code
+small, there are plenty of limitations in this bytecode.
+
+<h3>Configuration</h3>
+
+<dl>
+
+<dt><code>FCB setpatch,<var>patch</var></code>
+
+<dd>Set the patch for this channel.
+
+<dt><code>FCB setport,<var>df</var></code>
+
+<dd>Set portamento. Note frequency will have <var>df</var> added to it after
+each fragment is played. Remains in effect indefinitely, so set to zero when
+done. Frequency values aren't in Hz, they're in units of 71 (or 70) cpu cycles.
+
+<dt><code>FCB settp,<var>dn</var></code>
+
+<dd>Transposition. Subsequent notes will be offset by <var>dn</var> semitones.
+No tests are made to ensure the transposed notes are in range.
+
+</dl>
+
+<h3>Notes &amp; rests</h3>
+
+<dl>
+
+<dt><code>FCB silence,<var>duration</var></code>
+
+<dd>Silence channel and wait for <var>duration</var>.
+
+<dt><code>FCB rest,<var>duration</var></code>
+
+<dd>Wait for <var>duration</var>. Doesn't do anything to the current envelope.
+
+<dt><code>FCB xrest,<var>duration</var></code>
+
+<dd>Wait for <var>duration</var>. Delays envelope processing.
+
+<dt><code>FCB setnote,<var>n</var>,<var>duration</var></code>
+
+<dd>Set the playing note to <var>n</var> without restarting the envelope.
+
+<dt><code>FCB $80+<var>n</var>,<var>duration</var></code>
+
+<dd>Play note <var>n</var>. Envelope is reset. Note numbers are based on MIDI,
+with note 69 being A4, that is 440Hz. Increment is in semitones, so 70 is
+A<sup>♯</sup>4 (B<sup>♭</sup>4) and 68 is G<sup>♯</sup>4 (A<sup>♭</sup>4). The
+frequency table generation script also includes convenience labels for notes;
+from <code>c0</code> ($80+12) to <code>g8</code> ($80+115). Sharps have labels
+like <code>cs4</code>.
+
+</dl>
+
+<h3>Program flow</h3>
+
+<dl>
+
+<dt><code>FCB jump</code>
+<dt><code>FDB <var>address</var></code>
+
+<dd>Subsequent commands executed from <var>address</var>. You probably want one
+of these at the end of your tune data to loop back to the beginning.
+
+<dt><code>FCB loop,<var>count</var></code>
+
+<dd>Loop <var>count</var> times up to the <code>next</code> command. Note: only
+one loop per channel at a time - no nesting!
+
+<dt><code>FCB next</code>
+
+<dd>Indicate end of looped code.
+
+<dt><code>FCB call</code>
+<dt><code>FDB <var>address</var></code>
+
+<dd>Subroutine call. Commands are executed from <var>address</var>. When a
+<code>return</code> command is encountered, return to the caller. Again note:
+only one call per channel - no nesting.
+
+<dt><code>FCB calltp, <var>dn</var></code>
+<dt><code>FDB <var>address</var></code>
+
+<dd>Call with transpose. Shortcut for a <code>settp</code> command followed by
+a <code>call</code> command.
+
+<dt><code>FCB return</code>
+
+<dd>Return to caller.
+
+</dl>
+
+<h2>Calling the player</h2>
+
+<p>Initialise <code>DP</code> to point the the right place. If you want to use
+a different <code>DP</code> for your own things in between calls to the player,
+you must set it up before each call.
+
+<p>If necessary, configure the PIAs so that only the DAC bits are outputs. For
+speed, no masking of the lower bits is performed, which may interfere with
+connected printers. Ensure the DAC is selected for output to the sound bus. See
+the test harness for an example of this (search for the <code>start</code>
+label).
+
+<p>Select a tune by loading the <code>A</code> register with its index and call
+<code>select_tune</code>.
+
+<p>Then, simply call <code>play_frag</code> each time you want a fragment of
+audio to be emitted (e.g., in a loop while waiting for a keypress).
+
+<h2>Code notes</h2>
+
+<p>Self-modifying code is used throughout for speed. Don't expect to embed this
+in a ROM unless you copy the main playback routine into RAM first.  The most
+critical variables are the current wave id and frequency for each channel
+(<code>c<i>n</i>wave</code> and <code>c<i>n</i>freq</code>), as they sit within
+the tight fragment playing loop.
+
+<p>It's important that the main play loop, starting with
+<code>mixer_loop</code>, be entirely contained with the Direct Page. It's just
+as important that all the waveform data be page-aligned. As long as you set the
+code origin (<code>ORG</code>) to be page-aligned and don't reorganise it,
+these conditions will be met. The waveform data comes first (256 bytes each),
+followed by a 128-entry note to frequency table (<code>ftable</code>, 256
+bytes), followed by the Direct Page variables &amp; code.
+
+<p>By default, CyD is built with a 71 cycle core mixer. If built with
+<code>make VSYNC=1</code> the <samp>Makefile</samp> will pass appropriate arguments to the
+scripts and assembler to build with a 70 cycle core mixer that depends on VSYNC
+for its timing instead of using a counter, thus tying it to a PAL (or NTSC)
+system. As a bonus, FAST CPU rate is enabled for tune processing in this mode,
+as the VDG is guaranteed to be outside the active area once an audio fragment
+is done.
+
+<h2>Tips &amp; tricks</h2>
+
+<p>A key change for a phrase can be written without having to transcribe all
+the notes again: make that section a <code>call</code>ed routine. Set a
+transposition offset (in semitones) and call that routine in one command with
+<code>calltp</code>.
+
+<p>Envelopes are fairly long-winded: the ADS portion must be represented in its
+entirety - a byte per fragment duration - until the sustain value, which for
+slow decays can add up. However, patch definitions point directly to the
+envelope, so if the definition of one envelope matches the end portion of an
+existing one, just make the patch point into the existing one.
+
+<p>A common trick on the C64 to give the appearance of more channels, was to
+play a short burst of noise before playing a note, thus providing a "drum beat"
+while still keeping the channel mostly free for melody or bassline. CyD
+"envelope"s are completely arbitrary sequences of wave ids, so this is easily
+accomplished by making the first fragment a noise waveform.
+
+<p>And of course the two previous tricks can be combined so that you have one
+patch indicating percussion-then-note, and another with just the note without
+needing to replicate envelope data.
+
+<p>There's nothing to stop you calling a routine that plays a series of notes
+multiple times with different patches selected.
+
+<p>The duration of each channel need not be the same, though it would usually
+be a good idea. If one channel is a simple repeating bassline, you might only
+need to include the notes for it in an infinite loop (using <code>jump</code>).
+
+<h2>SID?</h2>
+
+<p>CyD was inspired by CoCoSID, but the programmatic approach (rather than
+pattern-based) is supposed to provide the ability to create quite compact sets
+of tunes. However, SIDs were the obvious way of testing, so this comes with a
+Perl script to translate a SID file into data suitable for CyD. Just be aware
+that the data will be far too large to be practical, as no attempt is made to
+recognise patterns.
+
+<p>This script is called <samp>sidparse.pl</samp>. It depends on
+<samp>siddump</samp> for its operation. Feed the standard output of
+<samp>siddump</samp> to the standard input of <samp>sidparse.pl</samp>.
+
+<p><samp>sidparse.pl</samp> does a reasonable job of generating envelope data
+so long as the SID tune doesn't pull too many fancy tricks - e.g., filter
+sweeps will probably appear as note data.
+
+<p>The provided <samp>Makefile</samp> will string these tools together for you.
+Just call it with <code>make SID=<var>path/to/sid_file</var></code>.  e.g.,
+assuming a subdirectory called <samp>sid</samp> containing all your SID files:
+
+<pre>
+$ make SID=sid/Ghosts_n_Goblins.sid
+</pre>
+
+<p>Override <code>SDFLAGS</code> to provide flags to <samp>siddump</samp> (you
+can see various examples of this in the <samp>Makefile</samp>). This will
+almost certainly be necessary to limit the duration so you don't overrun
+available memory.
+
+<p>A selection of pre-built examples is included with this upload - they'll all
+cut off early, loop badly, and use far more memory than they need to in the
+process, but they give good examples of the sort of sounds that can be
+achieved.
+
+</body>
+</html>
