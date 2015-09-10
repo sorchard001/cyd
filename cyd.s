@@ -19,36 +19,7 @@ frag_dur	equ	247		; just under 50 fragments per second
 ; Waves are specifically aligned to a page boundary, so only the page
 ; number is necessary to reference them.
 
-silent		equ	*+128
-		includebin	"silent.bin"
-
-sqr2		equ	*+128
-		includebin	"sqr2.bin"
-sqr1		equ	*+128
-		includebin	"sqr1.bin"
-sqr0		equ	*+128
-		includebin	"sqr0.bin"
-
-saw2		equ	*+128
-		includebin	"saw2.bin"
-saw1		equ	*+128
-		includebin	"saw1.bin"
-saw0		equ	*+128
-		includebin	"saw0.bin"
-
-tri2		equ	*+128
-		includebin	"tri2.bin"
-tri1		equ	*+128
-		includebin	"tri1.bin"
-tri0		equ	*+128
-		includebin	"tri0.bin"
-
-nzz2		equ	*+128
-		includebin	"nzz2.bin"
-nzz1		equ	*+128
-		includebin	"nzz1.bin"
-nzz0		equ	*+128
-		includebin	"nzz0.bin"
+		include	"waves0.s"
 
 ftable		include	"ftable.s"
 

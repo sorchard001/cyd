@@ -1,16 +1,21 @@
 #!/usr/bin/perl
 
-#use Data::Dumper;
 use Getopt::Long;
+use Pod::Usage;
 
 my $cpu_freq = 14318180 / 16;
 my $mixer_cyc = 71;
 
-Getopt::Long::Configure("bundling", "auto_help");
+Getopt::Long::Configure("gnu_getopt");
 
-GetOptions("cycles|c=i" => \$mixer_cyc);
+GetOptions(
+		"cycles|c=i" => \$mixer_cyc,
+		"help" => sub { pod2usage(-verbose => 2); },
+	  ) or exit(2);
 
 my $freq_scale = (65536 * 1000000) / (16777216 * ($cpu_freq / $mixer_cyc));
+
+my %used_waves = ();
 
 my %voices = (
 	'tri' => [ 160 => 'tri2', 80 => 'tri1', 16 => 'tri0', 0 => 'silent' ],
@@ -231,6 +236,12 @@ for my $c (0..2) {
 }
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+print ";begin-waves\n";
+for (keys %used_waves) {
+	print "; $_\n";
+}
+print ";end-waves\n";
 
 my $nbytes = 0;
 
@@ -472,17 +483,21 @@ sub voice_ampl_to_wave {
 	my @v = @{$voices{$voice}};
 	while (@v) {
 		if ($ampl >= $v[0]) {
+			$used_waves{$v[1]} = 1;
 			return $v[1];
 		}
 		shift @v;
 		shift @v;
 	}
+	$used_waves{'silent'} = 1;
 	return 'silent';
 }
 
 __END__
 
-=head1 sidparse.pl
+=encoding utf8
+
+=head1 NAME
 
 sidparse.pl - convert siddump output into CyD data
 
@@ -490,8 +505,18 @@ sidparse.pl - convert siddump output into CyD data
 
 sidparse.pl [OPTION]...
 
- Options:
-   -c, --cycles C       mixer loop takes C cycles [71]
+=head1 OPTIONS
+
+=over
+
+=item B<-c>, B<--cycles> I<C>
+
+mixer loop takes I<C> cycles [71]
+
+=item B<--help>
+
+display this help and exit
+
+=back
 
 =cut
-
