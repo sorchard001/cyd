@@ -22,6 +22,12 @@ patch_2
 patch_3
 	fcb	0
 	fdb	envelope_5,envelope_0
+patch_4
+	fcb	12
+	fdb	envelope_1,envelope_2
+
+arp1	fcb	4,8
+arp0	fcb	0
 
 tempo	equ	6
 sq	equ	tempo
@@ -84,9 +90,19 @@ trill
 	fcb	return
 
 tune0_c3
-	fcb	setpatch,3
+	fcb	setpatch,4
+	fcb	setarp,1,arp1>>8,arp1
 1
-	fcb	a4,sq
-	fcb	rest,3*sq
+	fcb	silence,sq*12
+	fcb	c4,cr
+	fcb	e4,cr
+	fcb	c4,cr
+	fcb	silence,sq*12
+	fcb	settp,2
+	fcb	c4,cr
+	fcb	e4,cr
+	fcb	c4,cr
+	fcb	settp,0
+	fcb	silence,sq*12
 
 	fcb	jump,1B>>8,1B

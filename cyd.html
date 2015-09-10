@@ -147,6 +147,14 @@ No tests are made to ensure the transposed notes are in range.
 
 <dd>Set the playing note to <var>n</var> without restarting the envelope.
 
+<dt><code>FCB setarp,<var>duration</var></code>
+<dt><code>FDB <var>address</var></code>
+
+<dd>Set an arpeggio. Initial note offset is zero, after <var>duration</var>,
+the next note offset is fetched starting at <var>address</var>. When the
+fetched offset is zero, the next <var>address</var> is reset to the initial
+value. As with settp, no test is made to ensure the offset notes stay in range.
+
 <dt><code>FCB $80+<var>n</var>,<var>duration</var></code>
 
 <dd>Play note <var>n</var>. Envelope is reset. Note numbers are based on MIDI,

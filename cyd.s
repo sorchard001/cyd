@@ -38,6 +38,7 @@ player_dp	equ	*>>8
 chan_vars	macro
 c\1ctimer	fcb	1
 c\1etimer	fcb	1
+c\1arptimer	fcb	1
 c\1loop		fcb	0
 		endm
 
@@ -160,33 +161,69 @@ c\1port		equ	*+2
 process_tune
 
 chan_handle	macro
+
+		; arpeggio
+		dec	c\1arptimer
+		bne	20F
+		inc	c\1wantnote	; any non-zero
+c\1arpptr	equ	*+1
+		ldx	#null_arp
+		lda	,x+
+		bne	10F
+		ldx	c\1arpbase
+10		stx	c\1arpptr
+		sta	c\1arp
+20
+
 		dec	c\1ctimer
-		bne	c\1skip
+		bne	c\1checknote
 c\1tuneptr	equ	*+1
 		ldu	#$0000
 c\1nextbyte	lda	,u+
-		bpl	jump_cmd_c\1
+		bmi	30F
+
+		; jump to command handler
+c\1cmd		ldx	#jumptable_c\1
+		jmp	[a,x]
+
 		; a=note (0-127)
+30
 c\1ads_time	equ	*+1
-10		ldb	#$00
+		ldb	#$00
 		stb	c\1etimer
 c\1env_ads	equ	*+1
 		ldx	#$0000
 		stx	c\1env_ptr
-;c\1notelength	equ	*+1
-;		ldb	#$00
-;		bne	c\1setnote
 		pulu	b	; b=time
 c\1setnote	stb	c\1ctimer
-c\1noteonly
+		sta	c\1note
+c\1done		stu	c\1tuneptr
+c\1arpbase	equ	*+1
+		ldx	#null_arp
+		stx	c\1arpptr
+		bra	c\1donote
+
+c\1checknote
+c\1wantnote	equ	*+1
+		lda	#$00
+		beq	c\1nonote
+c\1donote
+		clr	c\1wantnote
+c\1note		equ	*+1
+		lda	#$00
 c\1tp		equ	*+1
 		adda	#$00
+c\1arp		equ	*+1
+		adda	#$00
+c\1arptime	equ	*+1
+		ldb	#$00
+		stb	c\1arptimer
 		lsla
 		ldx	#ftable+128
 		ldd	a,x
 		std	c\1freq
-c\1done		stu	c\1tuneptr
-c\1skip
+c\1nonote
+
 		endm
 
 		chan_handle	1
@@ -198,15 +235,6 @@ c\1skip
 	endif
 
 		rts
-
-jmp_cmd_c	macro
-jump_cmd_c\1	ldx	#jumptable_c\1
-		jmp	[a,x]
-		endm
-
-		jmp_cmd_c	1
-		jmp_cmd_c	2
-		jmp_cmd_c	3
 
 ; -----------------------------------------------------------------------
 
@@ -288,6 +316,18 @@ return_c\1	ldu	#$0000
 		jmp	c\1nextbyte
 		endm
 
+setarp_c	macro
+clrarp_c\1	ldx	#0
+		clra
+		bra	10F
+setarp_c\1	pulu	a,x
+10		sta	c\1arptime
+		sta	c\1arptimer
+		stx	c\1arpbase
+		stx	c\1arpptr
+		jmp	c\1nextbyte
+		endm
+
 		rest_c		1
 		rest_c		2
 		rest_c		3
@@ -318,6 +358,9 @@ return_c\1	ldu	#$0000
 		return_c	1
 		return_c	2
 		return_c	3
+		setarp_c	1
+		setarp_c	2
+		setarp_c	3
 
 silence		equ	$00
 rest		equ	$02
@@ -332,6 +375,8 @@ jump		equ	$12
 call		equ	$14
 calltp		equ	$16
 return		equ	$18
+setarp		equ	$1a
+clrarp		equ	$1c
 
 jumptable_c	macro
 jumptable_c\1
@@ -348,6 +393,8 @@ jumptable_c\1
 		fdb	call_c\1
 		fdb	calltp_c\1
 		fdb	return_c\1
+		fdb	setarp_c\1
+		fdb	clrarp_c\1
 		endm
 
 		jumptable_c	1
@@ -406,6 +453,8 @@ start
 
 1		jsr	play_frag
 		bra	1B
+
+null_arp	fcb	0
 
 ; Test tune
 
