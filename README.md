@@ -13,7 +13,7 @@ memory.  If there isn't a rule in the Makefile for the one you choose,
 you'll probably have to specify some SDFLAGS for siddump to limit the
 amount of time it dumps the tune for.
 
-Needs: asm6809, bin2cas.pl, dzip, perl, siddump
+Needs: asm6809, bin2cas.pl, dzip, perl, siddump, sox
 
 ```
 git clone https://github.com/sixxie/cyd
