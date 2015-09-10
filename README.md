@@ -10,7 +10,7 @@ rewritten with a tight core and tune scripting engine.
 But note this is just to quickly try out SID tunes, which do *not* convert
 cleanly, do *not* use the programming feature and so take up loads of
 memory.  If there isn't a rule in the Makefile for the one you choose,
-you'll probably have to specify some SDFLAGS for siddump so limit the
+you'll probably have to specify some SDFLAGS for siddump to limit the
 amount of time it dumps the tune for.
 
 Needs: asm6809, bin2cas.pl, dzip, perl, siddump
