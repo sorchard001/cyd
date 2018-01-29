@@ -6,6 +6,7 @@ A 3-channel music player for the Dragon.  Inspired by Rem's CoCoSID, this is
 rewritten with a tight core and tune scripting engine.
 
 Copyright 2013-2015 Ciaran Anscomb
+
 Mods by Stewart Orchard 2018
 
 ## Quick Start
