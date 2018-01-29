@@ -1,3 +1,15 @@
+;List waveforms required for build
+;
+;begin-waves
+; silent
+; sqr2
+; sqr1
+; sqr0
+; nzz2
+; nzz1
+; nzz0
+;end-waves
+
 envelope_1
 	fcb	sqr2>>8,sqr1>>8,0
 envelope_2

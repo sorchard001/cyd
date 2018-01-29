@@ -123,6 +123,7 @@ CLEAN += tune0.s
 
 waves0.s: $(SID:.sid=.s)
 	for w in $(shell awk '/^;begin-waves$$/,/^;end-waves$$/{print $$2}' $(SID:.sid=.s)); do echo "$$w equ *+128"; echo " includebin /$$w.bin/"; done > $@
+CLEAN += waves0.s
 
 ####
 

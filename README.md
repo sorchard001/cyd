@@ -5,6 +5,9 @@
 A 3-channel music player for the Dragon.  Inspired by Rem's CoCoSID, this is
 rewritten with a tight core and tune scripting engine.
 
+Copyright 2013-2015 Ciaran Anscomb
+Mods by Stewart Orchard 2018
+
 ## Quick Start
 
 But note this is just to quickly try out SID tunes, which do *not* convert
@@ -20,5 +23,16 @@ git clone https://github.com/sixxie/cyd
 cd cyd
 cp /path/to/Ocean_Loader_2.sid .
 make SID=Ocean_Loader_2.sid
+xroar cyd.bin
+```
+
+## New Stuff by S.Orchard
+
+Added magic comments to Ciaran's example tune for easier build.
+
+```
+git clone https://github.com/sorchard001/cyd
+cd cyd
+make SID=example.s
 xroar cyd.bin
 ```
