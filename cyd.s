@@ -3,6 +3,7 @@
 ; ... or "There's Good CyD"
 
 ; Copyright 2013-2015 Ciaran Anscomb
+; Mods 2018 S.Orchard
 
 ; -----------------------------------------------------------------------
 
@@ -63,7 +64,7 @@ c\1env_r	equ	*+1
 		ldx	#$0000
 1		lda	,x+
 		beq	2F
-		sta	c\1wave
+		sta	c\1wavevol
 		stx	c\1env_ptr
 2
 		endm
@@ -72,8 +73,13 @@ c\1env_r	equ	*+1
 		chan_env	2
 		chan_env	3
 
-c3wave		equ	*+1
-		ldx	#silent
+	if !CYD_C3_PULSE
+c3wavevol	equ	*+1
+		ldx	#(silent - 128)
+c3duty		equ	*+1
+		ldb	#128
+		abx
+	endif
 
 		ldu	#reg_pia1_pdra
 	if VSYNC
@@ -96,6 +102,14 @@ c1off		equ	*+1
 c1freq		equ	*+1
 		addd	#$0100		; 4
 		std	c1off		; 5
+	if CYD_C1_PULSE
+c1duty		equ	*+1
+		adda	#96
+		rorb
+		sex
+c1wavevol	equ	*+1
+		anda	#85
+	endif
 		sta	c1val		; 4
 					; == 16
 
@@ -104,6 +118,14 @@ c2off		equ	*+1
 c2freq		equ	*+1
 		addd	#$0100		; 4
 		std	c2off		; 5
+	if CYD_C2_PULSE
+c2duty		equ	*+1
+		adda	#96
+		rorb
+		sex
+c2wavevol	equ	*+1
+		anda	#85
+	endif
 		sta	c2val		; 4
 					; == 16
 
@@ -112,15 +134,36 @@ c3off		equ	*+1
 c3freq		equ	*+1
 		addd	#$0100		; 4
 		std	c3off		; 5
+	if CYD_C3_PULSE
+c3duty		equ	*+1
+		adda	#96
+		rorb
+		sex
+c3wavevol	equ	*+1
+		anda	#85
+	else
 		ldb	a,x		; 5
 					; == 17
+	endif
 
-c1wave		equ	*+1
+	if CYD_C1_PULSE
+c1val		equ	*+1
+		addb	#0		; 2
+	else
+c1wavevol	equ	*+1
 c1val		equ	*+2
 		addb	>silent		; 5
-c2wave		equ	*+1
+	endif
+
+	if CYD_C2_PULSE
+c2val		equ	*+1
+		addb	#0		; 2
+	else
+c2wavevol	equ	*+1
 c2val		equ	*+2
 		addb	>silent		; 5
+	endif
+
 		stb	,u		; 4
 					; == 16
 
