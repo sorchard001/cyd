@@ -3,13 +3,15 @@
 ; ... or "There's Good CyD"
 
 ; Copyright 2013-2015 Ciaran Anscomb
+;
 ; Mods 2018 S.Orchard
-
+; Channels can individually configured as rectangular pulse gens
+; with variable duty cycle
 ; -----------------------------------------------------------------------
 
 		include	"dragonhw.s"
 
-	if !VSYNC
+	if !CYD_VSYNC
 frag_dur	equ	247		; just under 50 fragments per second
 	endif
 
@@ -41,6 +43,7 @@ c\1ctimer	fcb	1
 c\1etimer	fcb	1
 c\1arptimer	fcb	1
 c\1loop		fcb	0
+c\1duty_st	fcb	128
 		endm
 
 		chan_vars	1
@@ -82,7 +85,7 @@ c3duty		equ	*+1
 	endif
 
 		ldu	#reg_pia1_pdra
-	if VSYNC
+	if CYD_VSYNC
 		leay	-29,u		; y=reg_pia0_crb
 		lda	-1,y		; clear outstanding IRQ
 	else
@@ -104,7 +107,7 @@ c1freq		equ	*+1
 		std	c1off		; 5
 	if CYD_C1_PULSE
 c1duty		equ	*+1
-		adda	#96
+		adda	#16
 		rorb
 		sex
 c1wavevol	equ	*+1
@@ -142,32 +145,32 @@ c3duty		equ	*+1
 c3wavevol	equ	*+1
 		anda	#85
 	else
-		ldb	a,x		; 5
+		lda	a,x		; 5
 					; == 17
 	endif
 
 	if CYD_C1_PULSE
 c1val		equ	*+1
-		addb	#0		; 2
+		adda	#0		; 2
 	else
 c1wavevol	equ	*+1
 c1val		equ	*+2
-		addb	>silent		; 5
+		adda	>silent		; 5
 	endif
 
 	if CYD_C2_PULSE
 c2val		equ	*+1
-		addb	#0		; 2
+		adda	#0		; 2
 	else
 c2wavevol	equ	*+1
 c2val		equ	*+2
-		addb	>silent		; 5
+		adda	>silent		; 5
 	endif
 
-		stb	,u		; 4
+		sta	,u		; 4
 					; == 16
 
-	if VSYNC
+	if CYD_VSYNC
 		lda	,y		; 4
 		bpl	mixer_loop	; 3
 					; == 7
@@ -181,9 +184,27 @@ c2val		equ	*+2
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	if VSYNC
+	if CYD_VSYNC
 		sta	reg_sam_r1s	; FAST CPU rate
 	endif
+
+; Update pulse duty
+
+chan_duty	macro
+	if CYD_C\1_PULSE || (\1==3)
+		lda 	c\1duty
+c\1duty_rate	equ	*+1
+		adda	#1
+c\1duty_cond	equ	*
+		bmi	1f
+		sta	c\1duty
+1
+	endif
+		endm
+
+		chan_duty	1
+		chan_duty	2
+		chan_duty	3
 
 ; Add portamento
 
@@ -240,6 +261,10 @@ c\1env_ads	equ	*+1
 		pulu	b	; b=time
 c\1setnote	stb	c\1ctimer
 		sta	c\1note
+	if CYD_C\1_PULSE || (\1==3)
+		lda	c\1duty_st
+c\1duty_init	sta	c\1duty
+	endif
 c\1done		stu	c\1tuneptr
 c\1arpbase	equ	*+1
 		ldx	#null_arp
@@ -273,7 +298,7 @@ c\1nonote
 		chan_handle	2
 		chan_handle	3
 
-	if VSYNC
+	if CYD_VSYNC
 		sta	reg_sam_r1c	; AD CPU rate
 	endif
 
@@ -284,7 +309,12 @@ c\1nonote
 ; Command handlers
 
 rest_c		macro
-silence_c\1	ldd	#envelope_0
+silence_c\1
+	if CYD_C\1_PULSE
+		ldd	#envelope_0p
+	else
+		ldd	#envelope_0w
+	endif
 		std	c\1env_ptr
 xrest_c\1	clr	c\1etimer
 rest_c\1	pulu	a	; a=time
@@ -371,6 +401,31 @@ setarp_c\1	pulu	a,x
 		jmp	c\1nextbyte
 		endm
 
+CYD_DUTY_RESET	equ	$97		; sta <  (new note resets duty)
+CYD_DUTY_NORST	equ	$81		; cmpa # (no duty reset)
+CYD_DUTY_SWEEP	equ	$2b		; bmi    (duty sweeps to -ve val)
+CYD_DUTY_CYCLE	equ	$21		; brn    (duty cycles continuously)
+
+setplscfg_c	macro
+	if CYD_C\1_PULSE || (\1==3)
+setplscfg_c\1	pulu	d
+		sta	c\1duty_init
+		stb	c\1duty_cond
+		jmp	c\1nextbyte
+	endif
+		endm
+
+setplsduty_c	macro
+	if CYD_C\1_PULSE || (\1==3)
+setplsduty_c\1	pulu	d
+		sta	c\1duty
+		sta	c\1duty_st
+		stb	c\1duty_rate
+		jmp	c\1nextbyte
+	endif
+		endm
+
+
 		rest_c		1
 		rest_c		2
 		rest_c		3
@@ -404,6 +459,13 @@ setarp_c\1	pulu	a,x
 		setarp_c	1
 		setarp_c	2
 		setarp_c	3
+		setplscfg_c	1
+		setplscfg_c	2
+		setplscfg_c	3
+		setplsduty_c	1
+		setplsduty_c	2
+		setplsduty_c	3
+
 
 silence		equ	$00
 rest		equ	$02
@@ -420,6 +482,8 @@ calltp		equ	$16
 return		equ	$18
 setarp		equ	$1a
 clrarp		equ	$1c
+setplscfg	equ	$1e
+setplsduty	equ	$20
 
 jumptable_c	macro
 jumptable_c\1
@@ -438,11 +502,27 @@ jumptable_c\1
 		fdb	return_c\1
 		fdb	setarp_c\1
 		fdb	clrarp_c\1
+	if CYD_C\1_PULSE || (\1==3)
+		fdb	setplscfg_c\1
+		fdb	setplsduty_c\1
+	endif
 		endm
 
 		jumptable_c	1
 		jumptable_c	2
 		jumptable_c	3
+
+
+; Define silent envelopes for waveform and/or pulse channels
+
+	if !CYD_C1_PULSE || !CYD_C2_PULSE || !CYD_C3_PULSE
+envelope_0w	fcb	silent>>8, 0
+	endif
+
+	if CYD_C1_PULSE || CYD_C2_PULSE || CYD_C3_PULSE
+envelope_0p	fcb	1, 0
+	endif
+
 
 ; -----------------------------------------------------------------------
 
@@ -488,7 +568,7 @@ start
 		lda	#0
 		jsr	select_tune
 
-	if VSYNC
+	if CYD_VSYNC
 		; AD CPU rate
 		sta	reg_sam_r0s
 		sta	reg_sam_r1c

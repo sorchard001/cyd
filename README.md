@@ -37,3 +37,35 @@ cd cyd
 make SID=example.s
 xroar cyd.bin
 ```
+
+Modified demo:
+
+```
+make SID=example2.s
+```
+
+The three channels may be individually configured as variable duty pulse wave generators by defining symbols in the source as required:
+
+```
+CYD_C1_PULSE	equ 1
+CYD_C2_PULSE	equ 1
+CYD_C3_PULSE	equ 1
+```
+
+The pulse wave duty is configured with new commands in the music source:
+
+	fcb	setplscfg,reset_mode,cycle_mode
+	fcb	setplsduty,duty_val,rate_val
+
+where:
+
+**reset_mode** is either **CYD_DUTY_RESET** or **CYD_DUTY_NORST** (controls whether the duty is reset to the start value or not when a new note starts)
+
+**cycle_mode** is either **CYD_DUTY_CYCLE** or **CYD_DUTY_SWEEP** (controls whether the duty is allowed to cycle endlessly or stop before it reaches a value in the range 128-255)
+
+**duty_val** sets the current duty and start duty (range 0 to 255. Use a value of 128 for a 50% duty square wave)
+
+**rate_val** sets the rate at which the duty is varied (range -128 to 127)
+
+
+(Work in progress: Note frequency table calculation does not currently take into account the actual cycle counts resulting from the channel configuration)

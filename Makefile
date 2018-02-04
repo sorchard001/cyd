@@ -84,7 +84,7 @@ WAVES_BIN = silent.bin \
 CLEAN += $(WAVES_BIN)
 EXTRA_DIST += $(WAVES_BIN)
 
-sqr2.bin sqr1.bin sqr0.bin: WAVE_SYNTH = synth 256s square 1 0 0 40
+sqr2.bin sqr1.bin sqr0.bin: WAVE_SYNTH = synth 256s square 1 0 0 50
 saw2.bin saw1.bin saw0.bin: WAVE_SYNTH = synth 256s saw 1
 tri2.bin tri1.bin tri0.bin: WAVE_SYNTH = synth 256s triangle 1 
 sin2.bin sin1.bin sin0.bin: WAVE_SYNTH = synth 256s sine 1
@@ -141,8 +141,8 @@ cyd.cas cyd.wav: B2CFLAGS_ADD = --autorun -n "CYD" --eof-data --dzip --fast -D
 cyd.cas cyd.wav: cyd.bin
 CLEAN += cyd.cas cyd.wav
 
-ifdef VSYNC
-cyd.bin: AFLAGS += -d VSYNC
+ifdef CYD_VSYNC
+cyd.bin: AFLAGS += -d CYD_VSYNC
 GFTFLAGS = -c 70
 SPFLAGS = -c 70
 endif

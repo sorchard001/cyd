@@ -5,47 +5,51 @@
 ; sqr2
 ; sqr1
 ; sqr0
-; nzz2
-; nzz1
-; nzz0
 ;end-waves
 
-CYD_C1_PULSE	equ 1
+CYD_C1_PULSE	equ 0
+CYD_C2_PULSE	equ 1
+CYD_C3_PULSE	equ 0
 
 
+	if CYD_C1_PULSE
+envelope_1	fcb	85,60,0
+envelope_2	fcb	30,1,0
+	else
+envelope_1	fcb	sqr2>>8,sqr1>>8,0
+envelope_2	fcb	sqr0>>8,silent>>8,0
+	endif
 
-envelope_1
-	fcb	sqr2>>8,sqr1>>8,0
-envelope_1p
-	fcb	85,60,0
-envelope_2
-	fcb	sqr0>>8,silent>>8,0
-envelope_0	equ	*-2
-envelope_2p
-	fcb	30,1,0
-
-envelope_3
-	fcb	sqr0>>8,sqr0>>8,sqr0>>8,sqr1>>8,0
+	if CYD_C2_PULSE
+envelope_3	fcb	30,30,30,60,0
+	else
+envelope_3	fcb	sqr0>>8,sqr0>>8,sqr0>>8,sqr1>>8,0
+	endif
 envelope_4	equ	*-2
-envelope_5
-	fcb	nzz2>>8,nzz1>>8,nzz0>>8,silent>>8,0
+
+
+	if CYD_C3_PULSE
+envelope_5	fcb	85,60,0
+envelope_6	fcb	30,1,0
+	else
+envelope_5	fcb	sqr2>>8,sqr1>>8,0
+envelope_6	fcb	sqr0>>8,silent>>8,0
+	endif
+
 
 patch_table
 patch_0
 	fcb	0
-	fdb	envelope_0,envelope_0
+	fdb	envelope_1,envelope_1
 patch_1
 	fcb	4
-	fdb	envelope_1p,envelope_2p
+	fdb	envelope_1,envelope_2
 patch_2
 	fcb	0
 	fdb	envelope_3,envelope_4
 patch_3
-	fcb	0
-	fdb	envelope_5,envelope_0
-patch_4
 	fcb	12
-	fdb	envelope_1,envelope_2
+	fdb	envelope_5,envelope_6
 
 arp1	fcb	4,8
 arp0	fcb	0
@@ -59,6 +63,9 @@ mn	equ	cr*2
 sb	equ	mn*2
 
 tune0_c1
+    if CYD_C1_PULSE
+	fcb	setplsduty,96,-8
+    endif
 	fcb	setpatch,1
 	fcb	setport,0
 1
@@ -85,6 +92,9 @@ bass
 	fcb	return
 
 tune0_c2
+    if CYD_C2_PULSE
+	fcb	setplsduty,16,2
+    endif
 	fcb	setpatch,2
 1
 	fcb	silence,sq*12
@@ -111,7 +121,11 @@ trill
 	fcb	return
 
 tune0_c3
-	fcb	setpatch,4
+    if CYD_C3_PULSE
+	fcb	setplscfg,CYD_DUTY_NORST,CYD_DUTY_CYCLE
+	fcb	setplsduty,16,8
+    endif
+	fcb	setpatch,3
 	fcb	setarp,1,arp1>>8,arp1
 1
 	fcb	silence,sq*12
