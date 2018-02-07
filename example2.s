@@ -7,10 +7,14 @@
 ; sqr0
 ;end-waves
 
-CYD_C1_PULSE	equ 0
+; Select channels to be configured as variable duty
+CYD_C1_PULSE	equ 1
 CYD_C2_PULSE	equ 1
-CYD_C3_PULSE	equ 0
+CYD_C3_PULSE	equ 1
 
+
+; Envelope definition depends on how channel is configured:
+;  Either waveform address MSB or actual volume 1-85
 
 	if CYD_C1_PULSE
 envelope_1	fcb	85,60,0
@@ -26,7 +30,6 @@ envelope_3	fcb	30,30,30,60,0
 envelope_3	fcb	sqr0>>8,sqr0>>8,sqr0>>8,sqr1>>8,0
 	endif
 envelope_4	equ	*-2
-
 
 	if CYD_C3_PULSE
 envelope_5	fcb	85,60,0

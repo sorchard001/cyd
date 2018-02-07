@@ -11,8 +11,40 @@
 
 		include	"dragonhw.s"
 
+; -----------------------------------------------------------------------
+
+; Determine core timing based on configuration
+
+	if CYD_C1_PULSE
+CYD_C1_CYCLES	equ 5
+	else
+CYD_C1_CYCLES	equ 0
+	endif
+
+	if CYD_C2_PULSE
+CYD_C2_CYCLES	equ 5
+	else
+CYD_C2_CYCLES	equ 0
+	endif
+
+	if CYD_C3_PULSE
+CYD_C3_CYCLES	equ 3
+	else
+CYD_C3_CYCLES	equ 0
+	endif
+
+CYD_EXT_CYCLES	equ CYD_C1_CYCLES + CYD_C2_CYCLES + CYD_C3_CYCLES
+
+	if CYD_VSYNC
+CYD_CORE_CYCLES	equ 71 + CYD_EXT_CYCLES
+	else
+CYD_CORE_CYCLES	equ 70 + CYD_EXT_CYCLES
+	endif
+
+
 	if !CYD_VSYNC
-frag_dur	equ	247		; just under 50 fragments per second
+frag_dur	equ	(17898-350) / CYD_CORE_CYCLES
+;frag_dur	equ	247		; just under 50 fragments per second
 	endif
 
 ; -----------------------------------------------------------------------
@@ -143,7 +175,7 @@ c3duty		equ	*+1
 		rorb
 		sex
 c3wavevol	equ	*+1
-		anda	#85
+		anda	#85		; (+3 cycles total if enabled)
 	else
 		lda	a,x		; 5
 					; == 17
@@ -151,7 +183,7 @@ c3wavevol	equ	*+1
 
 	if CYD_C1_PULSE
 c1val		equ	*+1
-		adda	#0		; 2
+		adda	#0		; (+5 cycles total if enabled) 
 	else
 c1wavevol	equ	*+1
 c1val		equ	*+2
@@ -160,7 +192,7 @@ c1val		equ	*+2
 
 	if CYD_C2_PULSE
 c2val		equ	*+1
-		adda	#0		; 2
+		adda	#0		; (+5 cycles total if enabled)
 	else
 c2wavevol	equ	*+1
 c2val		equ	*+2
