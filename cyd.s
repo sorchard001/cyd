@@ -5,8 +5,8 @@
 ; Copyright 2013-2015 Ciaran Anscomb
 ;
 ; Mods 2018 S.Orchard
-; Channels can individually configured as rectangular pulse gens
-; with variable duty cycle
+; Channels can be individually configured as rectangular pulse gens
+;  with variable duty cycle
 ; -----------------------------------------------------------------------
 
 		include	"dragonhw.s"
@@ -284,6 +284,7 @@ c\1cmd		ldx	#jumptable_c\1
 
 		; a=note (0-127)
 30
+c\1newnote
 c\1ads_time	equ	*+1
 		ldb	#$00
 		stb	c\1etimer
@@ -457,6 +458,13 @@ setplsduty_c\1	pulu	d
 	endif
 		endm
 
+startsmp_c	macro
+startsmp_c\1	ldd	#((\1==3) ? $7fff : $ffff)
+		std	c\1off
+		pulu	a
+		jmp	c\1newnote
+		endm
+
 
 		rest_c		1
 		rest_c		2
@@ -497,6 +505,9 @@ setplsduty_c\1	pulu	d
 		setplsduty_c	1
 		setplsduty_c	2
 		setplsduty_c	3
+		startsmp_c	1
+		startsmp_c	2
+		startsmp_c	3
 
 
 silence		equ	$00
@@ -514,8 +525,10 @@ calltp		equ	$16
 return		equ	$18
 setarp		equ	$1a
 clrarp		equ	$1c
-setplscfg	equ	$1e
-setplsduty	equ	$20
+startsmp	equ	$1e
+setplscfg	equ	$20
+setplsduty	equ	$22
+
 
 jumptable_c	macro
 jumptable_c\1
@@ -534,6 +547,7 @@ jumptable_c\1
 		fdb	return_c\1
 		fdb	setarp_c\1
 		fdb	clrarp_c\1
+		fdb	startsmp_c\1
 	if CYD_C\1_PULSE || (\1==3)
 		fdb	setplscfg_c\1
 		fdb	setplsduty_c\1

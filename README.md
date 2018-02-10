@@ -38,10 +38,11 @@ make SID=example.s
 xroar cyd.bin
 ```
 
-Modified demo:
+Additional demo tunes:
 
 ```
 make SID=example2.s
+make SID=example3.s
 ```
 
 The three channels may be individually configured as variable duty pulse wave generators by defining symbols in the source as required:
@@ -68,4 +69,13 @@ where:
 **rate_val** sets the rate at which the duty is varied (range -128 to 127)
 
 
-(Work in progress: Note frequency table calculation does not currently take into account the actual cycle counts resulting from the channel configuration)
+New command to reset the channel phase before starting a note. This allows playback of 256-byte samples:
+
+	fcb	startsmp,n,duration
+
+where **n** is the note and **duration** is the note length as specified in similar commands.
+
+
+Note that it is necessary to define an envelope that cuts off the sample at the right time if looping of the sample is to be avoided.
+
+
