@@ -2,7 +2,7 @@
 
 	if	!_cyd_macros_s
 
-__cyd_macros_s	equ 1
+_cyd_macros_s	equ 1
 
 
 _silence macro

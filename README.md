@@ -43,6 +43,7 @@ Additional demo tunes:
 ```
 make SID=example2.s
 make SID=example3.s
+make SID=example4.s
 ```
 
 The three channels may be individually configured as variable duty pulse wave generators by defining symbols in the source as required:
