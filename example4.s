@@ -78,7 +78,7 @@ tune0_c3
 1	;fcb	silence,n1*16
 	;_jump 1b
 
-	_setplscfg	CYD_DUTY_NORST,CYD_DUTY_CYCLE
+	_setplscfg	CYD_DUTY_NORST,0,255
 	_setplsduty 	64,1
 
 	_setpatch	7
@@ -90,7 +90,7 @@ tune0_c3
 	_setport	0
 
 	_setpatch	2
-	_setplscfg	CYD_DUTY_RESET,CYD_DUTY_SWEEP
+	_setplscfg	CYD_DUTY_RESET,128,160
 	_setplsduty 	64,4
 1
 	_call	bass_main
@@ -132,29 +132,27 @@ tune0_c2
 	;_jump 1b
 
 	_setpatch 7
-	_setplscfg	CYD_DUTY_NORST,CYD_DUTY_CYCLE
-	_setplsduty	128,-1
+	_setplscfg	CYD_DUTY_NORST,0,255
+	_setplsduty	128,1
 	_call	lead_drone
 
 1	
 	_setpatch 1
-	_setplscfg	CYD_DUTY_RESET,CYD_DUTY_SWEEP
-	_setplsduty	128,-4
+	_setplscfg	CYD_DUTY_NORST,96,223
+	_setplsduty	128,8
 
 	_loop	4
 	_call	lead_main
 	_next
 
 	_setpatch 7
-	_setplscfg	CYD_DUTY_NORST,CYD_DUTY_CYCLE
-	_setplsduty	128,-1
+	_setplscfg	CYD_DUTY_NORST,0,255
+	_setplsduty	128,1
 
 	_call	lead_drone
 	_call	lead_drone
 
 	_setpatch 1
-	;_setplscfg	CYD_DUTY_RESET,CYD_DUTY_SWEEP
-	;_setplsduty	128,-4
 
 	_settp	-12
 	_loop	4
@@ -164,8 +162,6 @@ tune0_c2
 	_settp	0
 
 	_setpatch 7
-	;_setplscfg	CYD_DUTY_NORST,CYD_DUTY_CYCLE
-	;_setplsduty	128,-1
 
 	_call	lead_drone
 	_call	lead_drone

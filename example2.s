@@ -13,6 +13,10 @@ CYD_C2_PULSE	equ 1
 CYD_C3_PULSE	equ 1
 
 
+	; music data helper macros
+	include	"cyd_macros.s"
+
+
 ; Envelope definition depends on how channel is configured:
 ;  Either waveform address MSB or actual volume 1-85
 
@@ -67,7 +71,8 @@ sb	equ	mn*2
 
 tune0_c1
     if CYD_C1_PULSE
-	fcb	setplsduty,96,-8
+	_setplscfg	CYD_DUTY_RESET,120,136
+	_setplsduty	96,8
     endif
 	fcb	setpatch,1
 	fcb	setport,0
@@ -96,7 +101,8 @@ bass
 
 tune0_c2
     if CYD_C2_PULSE
-	fcb	setplsduty,16,2
+	_setplscfg	CYD_DUTY_RESET,192,224
+	_setplsduty	96,3
     endif
 	fcb	setpatch,2
 1
@@ -125,8 +131,8 @@ trill
 
 tune0_c3
     if CYD_C3_PULSE
-	fcb	setplscfg,CYD_DUTY_NORST,CYD_DUTY_CYCLE
-	fcb	setplsduty,16,8
+	_setplscfg	CYD_DUTY_NORST,8,248
+	_setplsduty	128,3
     endif
 	fcb	setpatch,3
 	fcb	setarp,1,arp1>>8,arp1

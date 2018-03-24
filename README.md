@@ -44,6 +44,7 @@ Additional demo tunes:
 make SID=example2.s
 make SID=example3.s
 make SID=example4.s
+make SID=example5.s
 ```
 
 The three channels may be individually configured as variable duty pulse wave generators by defining symbols in the source as required:
@@ -56,18 +57,18 @@ CYD_C3_PULSE	equ 1
 
 The pulse wave duty is configured with new commands in the music source:
 
-	fcb	setplscfg,reset_mode,cycle_mode
+	fcb	setplscfg,reset_mode,duty_min,duty_max
 	fcb	setplsduty,duty_val,rate_val
 
 where:
 
 **reset_mode** is either **CYD_DUTY_RESET** or **CYD_DUTY_NORST** (controls whether the duty is reset to the start value or not when a new note starts)
 
-**cycle_mode** is either **CYD_DUTY_CYCLE** or **CYD_DUTY_SWEEP** (controls whether the duty is allowed to cycle endlessly or stop before it reaches a value in the range 128-255)
+**duty_min** and **duty_max** define the range over which the duty will be varied
 
-**duty_val** sets the current duty and start duty (range 0 to 255. Use a value of 128 for a 50% duty square wave)
+**duty_val** sets the current duty and start duty (range 0 to 255. Use a value of 128 for a 50% duty square wave). It may be set outside the duty range in which case it will sweep until it falls within range.
 
-**rate_val** sets the rate at which the duty is varied (range -128 to 127)
+**rate_val** sets the rate at which the duty is varied (range 0 to 255).
 
 
 New command to reset the channel phase before starting a note. This allows playback of 256-byte samples:
@@ -78,5 +79,3 @@ where **n** is the note and **duration** is the note length as specified in simi
 
 
 Note that it is necessary to define an envelope that cuts off the sample at the right time if looping of the sample is to be avoided.
-
-

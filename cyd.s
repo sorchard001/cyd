@@ -75,7 +75,6 @@ c\1ctimer	fcb	1
 c\1etimer	fcb	1
 c\1arptimer	fcb	1
 c\1loop		fcb	0
-c\1duty_st	fcb	128
 		endm
 
 		chan_vars	1
@@ -226,10 +225,22 @@ chan_duty	macro
 	if CYD_C\1_PULSE || (\1==3)
 		lda 	c\1duty
 c\1duty_rate	equ	*+1
-		adda	#1
-c\1duty_cond	equ	*
-		bmi	1f
-		sta	c\1duty
+		adda	#0
+c\1duty_cond1	equ	*+1
+		cmpa	#$e0
+		bls	2f
+		neg	c\1duty_rate
+c\1duty_cond2	equ	*+1
+		ldd	#$2024		; bhs=$24 bls=$23
+		ldx	c\1duty_cond1
+		stx	c\1duty_cond2
+		std	c\1duty_cond1
+		bra	1f
+
+;c\1duty_cond	equ	*
+;		bmi	1f
+
+2		sta	c\1duty
 1
 	endif
 		endm
@@ -291,13 +302,14 @@ c\1ads_time	equ	*+1
 c\1env_ads	equ	*+1
 		ldx	#$0000
 		stx	c\1env_ptr
+	if CYD_C\1_PULSE || (\1==3)
+c\1duty_st	equ	*+1
+		ldb	#128
+c\1duty_init	stb	c\1duty
+	endif
 		pulu	b	; b=time
 c\1setnote	stb	c\1ctimer
 		sta	c\1note
-	if CYD_C\1_PULSE || (\1==3)
-		lda	c\1duty_st
-c\1duty_init	sta	c\1duty
-	endif
 c\1done		stu	c\1tuneptr
 c\1arpbase	equ	*+1
 		ldx	#null_arp
@@ -434,16 +446,19 @@ setarp_c\1	pulu	a,x
 		jmp	c\1nextbyte
 		endm
 
-CYD_DUTY_RESET	equ	$97		; sta <  (new note resets duty)
-CYD_DUTY_NORST	equ	$81		; cmpa # (no duty reset)
-CYD_DUTY_SWEEP	equ	$2b		; bmi    (duty sweeps to -ve val)
-CYD_DUTY_CYCLE	equ	$21		; brn    (duty cycles continuously)
+CYD_DUTY_RESET	equ	$d7		; stb <  (new note resets duty)
+CYD_DUTY_NORST	equ	$c1		; cmpb # (no duty reset)
 
 setplscfg_c	macro
 	if CYD_C\1_PULSE || (\1==3)
-setplscfg_c\1	pulu	d
+setplscfg_c\1	pulu	a
 		sta	c\1duty_init
-		stb	c\1duty_cond
+		pulu	a
+		ldb	#$24	; bhs
+		std	c\1duty_cond2
+		pulu	a
+		ldb	#$23	; bls
+		std	c\1duty_cond1
 		jmp	c\1nextbyte
 	endif
 		endm

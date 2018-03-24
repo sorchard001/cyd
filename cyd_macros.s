@@ -16,7 +16,7 @@ _rest	macro
 
 
 _setnote macro
-	fcb	setnote,\1
+	fcb	setnote,\1,\2
 	endm
 
 
@@ -85,12 +85,19 @@ _startsmp macro
 
 
 _setplscfg macro
-	fcb	setplscfg,\1,\2
+	fcb	setplscfg,\1,\2,\3
 	endm
 
 
 _setplsduty macro
 	fcb	setplsduty,\1,\2
+	endm
+
+
+_portamento	macro
+	_setport	(\3-\2)/(\4)
+	fcb		\1,\4
+	_setport	0
 	endm
 
 

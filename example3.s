@@ -63,8 +63,8 @@ tune0_c3
 	_silence	n1*16
 
 	_setpatch	1
-	_setplscfg	CYD_DUTY_RESET,CYD_DUTY_SWEEP
-	_setplsduty 	128,-2
+	_setplscfg	CYD_DUTY_RESET,0,0
+	_setplsduty 	112,2
 1
 	;_silence	n1*16
 	;_jump 1b
@@ -152,24 +152,24 @@ tune0_c2
 1	;_silence	n1*16
 	;_jump 1b
 
-	_setplscfg	CYD_DUTY_RESET,CYD_DUTY_SWEEP
+	_setplscfg	CYD_DUTY_RESET,128,160
 	_setplsduty	32,6
 	_calltp		24,lead_main
-	_setplsduty	128,-8
+	_setplscfg	CYD_DUTY_RESET,240,250
+	_setplsduty	128,8
 	_call		lead_main
 1
 	
 	_setplsduty	64,3
 	_calltp		24,lead_main
 
-	_setplscfg	CYD_DUTY_RESET,CYD_DUTY_SWEEP
-	_setplsduty	128,-8
+	_setplsduty	128,8
 	_call		lead_main
 
 	_setplsduty	32,4
 	_call		lead_main
 
-	_setplscfg	CYD_DUTY_NORST,CYD_DUTY_CYCLE
+	_setplscfg	CYD_DUTY_NORST,0,255
 	_setplsduty	16,3
 	_setport	-1
 	_calltp		12,bass_2

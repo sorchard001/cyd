@@ -19,22 +19,24 @@ my @note_map = ( );
 
 print "CYD_FSCALE\tequ\t65536 * CYD_CORE_CYCLES / $cpu_freq\n\n";
 
+my $fadjust = "1b / (1 + (1b >= \$8000))";
+
 for my $m (64..127,0..63) {
 	my $freq = (2 ** (($m - $mbase) / 12)) * $mfreq;
-	#my $f = (65536 * $freq) / ($cpu_freq / $mixer_cyc);
-	#if ($m >= 12 && $f < 0x8000) {
+	printf "1\tequ\t(CYD_FSCALE * %8.2f) + 0.5\n", $freq;
 	if ($m >= 12) {
 		my $o = int(($m - 12) / 12);
 		my $ni = $m % 12;
 		my $name = "$note_names[$ni]$o";
 		push @note_map, [ $name, $m|0x80 ];
+		print "f_$name\tequ\t$fadjust\n";
+		print "\tfdb\tf_$name\n";
+	} else {
+		print "\tfdb\t$fadjust\n";
 	}
-	#while ($f >= 0x8000) {
-	#	$f /= 2;  # pull off-scale notes down an octave
-	#}
 	#printf "\tfdb\t\$\%04x\n", int($f+0.5);
-	printf "CYD_F\tset\t(CYD_FSCALE * %8.2f) + 0.5\n", $freq;
-	print "\tfdb\tCYD_F / (1 + (CYD_F >= \$8000))\n";
+	#print "f_$name\tequ\t1b / (1 + (1b >= \$8000))\n";
+	#print "\tfdb\t1b / (1 + (1b >= \$8000))\n";
 }
 print "\n";
 
